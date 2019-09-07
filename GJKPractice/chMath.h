@@ -10,7 +10,6 @@
 namespace Chan
 {
 	
-
 #define CH_MATH_PRECISION 1
 
 #if CH_MATH_PRECISION == 1
@@ -128,36 +127,6 @@ namespace Chan
 		ChVector2 p;
 	};
 
-	inline ChReal dot(const ChVector2& a, const ChVector2& b)
-	{
-		return a.x * b.x + a.y * b.y;
-	}
-
-	inline ChReal Cross(const ChVector2& a, const ChVector2& b)
-	{
-		return a.x * b.y - a.y * b.x;
-	}
-
-	inline ChVector2 Cross(const ChVector2& a, ChReal s)
-	{
-		return ChVector2(s * a.y, -s * a.x);
-	}
-
-	inline ChVector2 Cross(ChReal s, const ChVector2& a)
-	{
-		return ChVector2(-s * a.y, s * a.x);
-	}
-
-	inline ChVector2 Mul(const ChTransform& T, const ChVector2& v)
-	{
-		return T.R * v + T.p;
-	}
-
-	inline ChReal dot(const ChVector3& a, const ChVector3& b)
-	{
-		return a.x * b.x + a.y * b.y + a.z * b.z;
-	}
-
 	inline ChVector2 operator * (const ChVector2& v, const ChReal& s)
 	{
 		return ChVector2(v.x * s, v.y * s);
@@ -201,6 +170,36 @@ namespace Chan
 	inline ChVector3 operator - (const ChVector3& a, const ChVector3& b)
 	{
 		return ChVector3(a.x - b.x, a.y - b.y, a.z - b.z);
+	}
+
+	inline ChReal dot(const ChVector2& a, const ChVector2& b)
+	{
+		return a.x * b.x + a.y * b.y;
+	}
+
+	inline ChReal Cross(const ChVector2& a, const ChVector2& b)
+	{
+		return a.x * b.y - a.y * b.x;
+	}
+
+	inline ChVector2 Cross(const ChVector2& a, ChReal s)
+	{
+		return ChVector2(s * a.y, -s * a.x);
+	}
+
+	inline ChVector2 Cross(ChReal s, const ChVector2& a)
+	{
+		return ChVector2(-s * a.y, s * a.x);
+	}
+
+	inline ChVector2 Mul(const ChTransform& T, const ChVector2& v)
+	{
+		return T.R * v + T.p;
+	}
+
+	inline ChReal dot(const ChVector3& a, const ChVector3& b)
+	{
+		return a.x * b.x + a.y * b.y + a.z * b.z;
 	}
 
 	inline ChReal Abs(ChReal a)
@@ -321,9 +320,6 @@ namespace Chan
 			return result;
 		}
 	};
-
-	struct chLiteBody;
-	void makeAABB(const chLiteBody* body, c2AABB* out);
 
 	struct c2RayInput
 	{
