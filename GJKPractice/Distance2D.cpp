@@ -44,7 +44,7 @@ Chan::ChVector2 Chan::Simplex::GetSearchDirection() const
 	}
 }
 
-Chan::ChVector2 Chan::Simplex::GetClosestPhint() const
+Chan::ChVector2 Chan::Simplex::GetClosestPoint() const
 {
 	switch (m_count)
 	{

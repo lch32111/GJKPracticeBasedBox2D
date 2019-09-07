@@ -33,7 +33,7 @@ namespace Chan
 	struct Simplex
 	{
 		ChVector2 GetSearchDirection() const;
-		ChVector2 GetClosestPhint() const;
+		ChVector2 GetClosestPoint() const;
 		void GetWitnessPoints(ChVector2* point1, ChVector2* point2) const;
 		void Solve2(const ChVector2& Q);
 		void Solve3(const ChVector2& Q);
