@@ -128,10 +128,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="chGL.h" />
     <ClInclude Include="chMath.h" />
     <ClInclude Include="Distance2D.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="chGL.cpp" />
     <ClCompile Include="chMath.cpp" />
     <ClCompile Include="Distance2D.cpp" />
     <ClCompile Include="glad.c" />
