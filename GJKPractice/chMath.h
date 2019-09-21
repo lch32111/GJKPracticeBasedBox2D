@@ -31,7 +31,13 @@ namespace Chan
 #define Chreal_abs fabs
 #endif
 
-	class ChVector2
+	class ChVecCommon
+	{
+		virtual ChReal* data() = 0;
+		virtual const ChReal* data() const = 0;
+	};
+
+	class ChVector2 : ChVecCommon
 	{
 	public:
 		ChVector2() { }
@@ -70,24 +76,58 @@ namespace Chan
 			return ChReal_sqrt(x * x + y * y);
 		}
 
+		ChReal* data() { return &x; }
+		const ChReal* data() const { return &x; }
+
 
 		ChReal x;
 		ChReal y;
 	};
 
-	class ChVector3
+	class ChVector3 : ChVecCommon
 	{
 	public:
 		ChVector3() { }
 		ChVector3(ChReal _x, ChReal _y, ChReal _z) 
 			: x(_x), y(_y), z(_z) { }
 
+		ChReal operator[](unsigned i) const
+		{
+			assert(i >= 0 && i < 3);
+			return (&x)[i];
+		}
+
+		ChReal* data() { return &x; }
+		const ChReal* data() const { return &x; }
+
 		ChReal x;
 		ChReal y;
 		ChReal z;
 	};
 
-	class ChMat22
+	class ChVector4 : ChVecCommon
+	{
+	public:
+		ChVector4() { }
+		ChVector4(ChReal _x, ChReal _y, ChReal _z, ChReal _w)
+			: x(_x), y(_y), z(_z), w(_w) { }
+
+		ChReal operator[](unsigned i) const
+		{
+			assert(i >= 0 && i < 4);
+			return (&x)[i];
+		}
+
+		ChReal* data() { return &x; }
+		const ChReal* data() const { return &x; }
+
+		ChReal x;
+		ChReal y;
+		ChReal z;
+		ChReal w;
+	};
+
+	class ChMat22 : ChVecCommon
 	{
 	public:
 		ChMat22() { }
@@ -117,8 +157,26 @@ namespace Chan
 			return B;
 		}
 
+		ChReal* data() { return col1.data(); }
+		const ChReal* data() const { return col1.data(); }
 
 		ChVector2 col1, col2;
+	};
+
+	class ChMat44 : ChVecCommon
+	{
+	public:
+		ChMat44() { }
+
+		ChMat44(const ChVector4& col1, const ChVector4& col2,
+			const ChVector4& col3, const ChVector4& col4)
+			: col1(col1), col2(col2), col3(col3), col4(col4)
+		{ }
+		
+		ChReal* data() { return col1.data(); }
+		const ChReal* data() const { return col1.data(); }
+
+		ChVector4 col1, col2, col3, col4;
 	};
 
 	struct ChTransform

@@ -56,14 +56,14 @@ public:
 		const char* vs =
 			"#version 330 core\n"
 			"layout(location = 0) in vec3 aPos;\n"
-			"layout(location = 1) in vec4 aColor;\n"
+			"layout(location = 1) in vec3 aColor;\n"
 			"uniform mat4 projection;\n"
 			"uniform mat4 view;\n"
 			"out vec4 lineColor;\n"
 			"void main()\n"
 			"{\n"
 				"gl_Position = projection * view * vec4(aPos, 1.0);\n"
-				"lineColor = aColor;\n"
+				"lineColor = vec4(aColor, 1.0);\n"
 			"}";
 
 		const char* fs =
@@ -103,6 +103,12 @@ public:
 		glDeleteShader(vertex);
 		glDeleteShader(fragment);
 
+		glUseProgram(m_program);
+		m_ProjLoc = glGetUniformLocation(m_program, "projection");
+		m_ViewLoc = glGetUniformLocation(m_program, "view");
+
+		glUseProgram(0);
+
 		prepareData();
 	}
 
@@ -119,24 +125,21 @@ public:
 		++m_count;
 	}
 
-	void renderLine()
+	void renderLine(const Chan::ChMat44& proj, const Chan::ChMat44& view)
 	{
 		if (m_count == 0) return;
 
-		/*
-		m_lineShader->use();
-		m_lineShader->setMat4("view", view);
-		m_lineShader->setMat4("projection", proj);
-		*/
+		glUniformMatrix4fv(m_ProjLoc, 1, GL_FALSE, proj.data());
+		glUniformMatrix4fv(m_ViewLoc, 1, GL_FALSE, view.data());
 
 		glBindVertexArray(m_VAO);
 		// Vertex Buffer
 		glBindBuffer(GL_ARRAY_BUFFER, m_VBO[0]);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, m_count * sizeof(Chan::ChVector3), m_vertices);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, m_count * sizeof(Chan::ChVector3), m_vertices[0].data());
 
 		// Color Buffer
 		glBindBuffer(GL_ARRAY_BUFFER, m_VBO[1]);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, m_count * sizeof(Chan::ChVector3), m_colors);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, m_count * sizeof(Chan::ChVector3), m_colors[0].data());
 
 		glDrawArrays(GL_LINES, 0, m_count);
 
@@ -159,6 +162,8 @@ private:
 	unsigned m_VBO[2];
 
 	GLuint m_program;
+	GLuint m_ProjLoc;
+	GLuint m_ViewLoc;
 
 	void prepareData()
 	{
@@ -176,7 +181,7 @@ private:
 		// Color Buffer
 		glBindBuffer(GL_ARRAY_BUFFER, m_VBO[1]);
 		glEnableVertexAttribArray(1); // color
-		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, (void*)0);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(m_colors), m_colors, GL_DYNAMIC_DRAW);
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -198,16 +203,31 @@ int main()
 
 	gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
-	glfwSetInputMode(gWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	//glfwSetInputMode(gWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glfwSwapInterval(0);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
+
+	Chan::ChVector4 x(1, 0, 0, 0);
+	Chan::ChVector4 y(0, 1, 0, 0);
+	Chan::ChVector4 z(0, 0, 1, 0);
+	Chan::ChVector4 w(0, 0, 0, 1);
+	Chan::ChMat44 iden(x, y, z, w);
+
+	Chan::ChVector3 p1(0, 0, 0);
+	Chan::ChVector3 p2(0.5, 0, 0);
+
+	CGRenderLine lineRenderer;
 
 	while (!glfwWindowShouldClose(gWindow))
 	{
 		glfwPollEvents();
 
+		glClearColor(0.2, 0.2, 0.2, 1.0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		lineRenderer.insertLine(p1, p2, Chan::ChVector3(1, 1, 1));
+		lineRenderer.renderLine(iden, iden);
 
 		glfwSwapBuffers(gWindow);
 	}
