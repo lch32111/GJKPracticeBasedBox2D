@@ -35,4 +35,30 @@ private:
 	void prepareGLObject();
 };
 
+class CGRenderPoint
+{
+public:
+	CGRenderPoint();
+	~CGRenderPoint();
+
+	void insertPoint(const Chan::ChVector3& P, const Chan::ChVector3& Color, float Size);
+	void renderPoint(const Chan::ChMat44& proj, const Chan::ChMat44& view);
+
+private:
+	enum { e_maxVertices = 2 * 512 };
+	Chan::ChVector3 m_vertices[e_maxVertices];
+	Chan::ChVector3 m_colors[e_maxVertices];
+	float m_sizes[e_maxVertices];
+
+	unsigned m_count;
+
+	unsigned m_VAO;
+	unsigned m_VBO[3];
+
+	GLuint m_program;
+	GLuint m_ProjViewLoc;
+
+	void prepareGLObject();
+};
+
 #endif

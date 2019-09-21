@@ -77,6 +77,7 @@ int main()
 	Chan::ChVector3 p2(0.5, 0, 0);
 
 	CGRenderLine lineRenderer;
+	CGRenderPoint pointRenderer;
 
 	while (!glfwWindowShouldClose(gWindow))
 	{
@@ -86,7 +87,10 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		lineRenderer.insertLine(p1, p2, Chan::ChVector3(1, 1, 1));
+		pointRenderer.insertPoint(p1, Chan::ChVector3(1, 0, 0), 10);
+
 		lineRenderer.renderLine(iden, iden);
+		pointRenderer.renderPoint(iden, iden);
 
 		glfwSwapBuffers(gWindow);
 	}
