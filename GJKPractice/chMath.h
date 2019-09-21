@@ -65,6 +65,12 @@ namespace Chan
 			return (&x)[i];
 		}
 
+		ChReal& operator[](unsigned i)
+		{
+			assert(i >= 0 && i < 2);
+			return (&x)[i];
+		}
+
 		float Length() const
 		{
 			return ChReal_sqrt(x * x + y * y);
@@ -91,6 +97,12 @@ namespace Chan
 			return (&x)[i];
 		}
 
+		ChReal& operator[](unsigned i)
+		{
+			assert(i >= 0 && i < 3);
+			return (&x)[i];
+		}
+
 		ChReal* data() { return &x; }
 		const ChReal* data() const { return &x; }
 
@@ -112,6 +124,12 @@ namespace Chan
 			return (&x)[i];
 		}
 
+		ChReal& operator[](unsigned i)	
+		{
+			assert(i >= 0 && i < 4);
+			return (&x)[i];
+		}
+
 		ChReal* data() { return &x; }
 		const ChReal* data() const { return &x; }
 
@@ -128,33 +146,45 @@ namespace Chan
 		ChMat22(ChReal angle)
 		{
 			ChReal c = ChReal_cos(angle), s = ChReal_sin(angle);
-			col1.x = c; col2.x = -s;
-			col1.y = s; col2.y = c;
+			cols[0].x = c; cols[1].x = -s;
+			cols[0].y = s; cols[1].y = c;
 		}
 
-		ChMat22(const ChVector2& col1, const ChVector2& col2) : col1(col1), col2(col2) { }
+		ChMat22(const ChVector2& col0, const ChVector2& col1) : cols{ col0, col1 } { }
 
 		ChMat22 Transpose() const
 		{
-			return ChMat22(ChVector2(col1.x, col2.x), ChVector2(col1.y, col2.y));
+			return ChMat22(ChVector2(cols[0].x, cols[1].x), ChVector2(cols[0].y, cols[1].y));
 		}
 
 		ChMat22 Invert() const
 		{
-			ChReal a = col1.x, b = col2.x, c = col1.y, d = col2.y;
+			ChReal a = cols[0].x, b = cols[1].x, c = cols[0].y, d = cols[1].y;
 			ChMat22 B;
 			ChReal det = a * d - b * c;
 			assert(det != 0.0f);
 			det = ChReal(1.0) / det;
-			B.col1.x = det * d;		B.col2.x = -det * b;
-			B.col1.y = -det * c;	B.col2.y = det * a;
+			B.cols[0].x = det * d;		B.cols[1].x = -det * b;
+			B.cols[0].y = -det * c;		B.cols[1].y = det * a;
 			return B;
 		}
 
-		ChReal* data() { return col1.data(); }
-		const ChReal* data() const { return col1.data(); }
+		ChVector2 operator[](unsigned i) const
+		{
+			assert(i >= 0 && i < 2);
+			return cols[i];
+		}
 
-		ChVector2 col1, col2;
+		ChVector2& operator[](unsigned i)
+		{
+			assert(i >= 0 && i < 2);
+			return cols[i];
+		}
+
+		ChReal* data() { return cols[0].data(); }
+		const ChReal* data() const { return cols[0].data(); }
+
+		ChVector2 cols[2];
 	};
 
 	class ChMat44
@@ -162,15 +192,33 @@ namespace Chan
 	public:
 		ChMat44() { }
 
-		ChMat44(const ChVector4& col1, const ChVector4& col2,
-			const ChVector4& col3, const ChVector4& col4)
-			: col1(col1), col2(col2), col3(col3), col4(col4)
+		ChMat44(const ChVector4& col0, const ChVector4& col1,
+			const ChVector4& col2, const ChVector4& col3)
+			: cols{col0, col1, col2, col3}
 		{ }
 		
-		ChReal* data() { return col1.data(); }
-		const ChReal* data() const { return col1.data(); }
+		ChReal* data() { return cols[0].data(); }
+		const ChReal* data() const { return cols[0].data(); }
 
-		ChVector4 col1, col2, col3, col4;
+		ChVector4 GetRow(int index) const
+		{
+			assert(index >= 0 && index < 4);
+			return ChVector4(cols[0][index], cols[1][index], cols[2][index], cols[3][index]);
+		}
+
+		ChVector4 operator[](unsigned i) const
+		{
+			assert(i >= 0 && i < 4);
+			return cols[i];
+		}
+
+		ChVector4& operator[](unsigned i)
+		{
+			assert(i >= 0 && i < 4);
+			return cols[i];
+		}
+
+		ChVector4 cols[4];
 	};
 
 	struct ChTransform
@@ -186,7 +234,7 @@ namespace Chan
 
 	inline ChVector2 operator * (const ChMat22& A, const ChVector2& v)
 	{
-		return ChVector2(A.col1.x * v.x + A.col2.x * v.y, A.col1.y * v.x + A.col2.y * v.y);
+		return ChVector2(A.cols[0].x * v.x + A.cols[1].x * v.y, A.cols[0].y * v.x + A.cols[1].y * v.y);
 	}
 
 	inline ChVector2 operator + (const ChVector2& a, const ChVector2& b)
@@ -209,14 +257,19 @@ namespace Chan
 		return ChVector2(s * v.x, s * v.y);
 	}
 
+	inline ChVector4 operator * (const ChVector4& a, const ChVector4& b)
+	{
+		return ChVector4(a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w);
+	}
+
 	inline ChMat22 operator + (const ChMat22& A, const ChMat22& B)
 	{
-		return ChMat22(A.col1 + B.col1, A.col2 + B.col2);
+		return ChMat22(A.cols[0] + B.cols[0], A.cols[1] + B.cols[1]);
 	}
 
 	inline ChMat22 operator * (const ChMat22& A, const ChMat22& B)
 	{
-		return ChMat22(A * B.col1, A * B.col2);
+		return ChMat22(A * B.cols[0], A * B.cols[1]);
 	}
 
 	inline ChVector3 operator - (const ChVector3& a, const ChVector3& b)
@@ -224,9 +277,34 @@ namespace Chan
 		return ChVector3(a.x - b.x, a.y - b.y, a.z - b.z);
 	}
 
+	inline ChReal dot(const ChVector4& a, const ChVector4& b)
+	{
+		return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
+	}
+
+	inline ChMat44 operator * (const ChMat44& A, const ChMat44& B)
+	{
+		ChVector4 cols[4];
+
+		for (int i = 0; i < 4; ++i)
+		{
+			for (int j = 0; j < 4; ++j)
+			{
+				cols[j][i] = dot(A.GetRow(i), B[j]);
+			}
+		}
+
+		return ChMat44(cols[0], cols[1], cols[2], cols[3]);
+	}
+
 	inline ChReal dot(const ChVector2& a, const ChVector2& b)
 	{
 		return a.x * b.x + a.y * b.y;
+	}
+
+	inline ChReal dot(const ChVector3& a, const ChVector3& b)
+	{
+		return a.x * b.x + a.y * b.y + a.z * b.z;
 	}
 
 	inline ChReal Cross(const ChVector2& a, const ChVector2& b)
@@ -249,11 +327,6 @@ namespace Chan
 		return T.R * v + T.p;
 	}
 
-	inline ChReal dot(const ChVector3& a, const ChVector3& b)
-	{
-		return a.x * b.x + a.y * b.y + a.z * b.z;
-	}
-
 	inline ChReal Abs(ChReal a)
 	{
 		return a > ChReal(0.0) ? a : -a;
@@ -266,7 +339,7 @@ namespace Chan
 
 	inline ChMat22 Abs(const ChMat22& A)
 	{
-		return ChMat22(Abs(A.col1), Abs(A.col2));
+		return ChMat22(Abs(A.cols[0]), Abs(A.cols[1]));
 	}
 
 	inline ChReal Sign(ChReal x)

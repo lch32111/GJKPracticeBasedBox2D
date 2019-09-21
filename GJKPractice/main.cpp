@@ -7,7 +7,6 @@
 #include <string>
 
 // TODO LIST
-// 2. Key Input processing (rotate, translate on polygon)
 // 3. Point Rendering for closest points
 // 4. Make sample polygons for testing the GJK algorithm
 
@@ -56,12 +55,11 @@ public:
 			"#version 330 core\n"
 			"layout(location = 0) in vec3 aPos;\n"
 			"layout(location = 1) in vec3 aColor;\n"
-			"uniform mat4 projection;\n"
-			"uniform mat4 view;\n"
+			"uniform mat4 projview;\n"
 			"out vec4 lineColor;\n"
 			"void main()\n"
 			"{\n"
-				"gl_Position = projection * view * vec4(aPos, 1.0);\n"
+				"gl_Position = projview * vec4(aPos, 1.0);\n"
 				"lineColor = vec4(aColor, 1.0);\n"
 			"}";
 
@@ -103,8 +101,7 @@ public:
 		glDeleteShader(fragment);
 
 		glUseProgram(m_program);
-		m_ProjLoc = glGetUniformLocation(m_program, "projection");
-		m_ViewLoc = glGetUniformLocation(m_program, "view");
+		m_ProjViewLoc = glGetUniformLocation(m_program, "projview");
 
 		glUseProgram(0);
 
@@ -147,9 +144,8 @@ public:
 
 		glUseProgram(m_program);
 		{
-			glUniformMatrix4fv(m_ProjLoc, 1, GL_FALSE, proj.data());
-			glUniformMatrix4fv(m_ViewLoc, 1, GL_FALSE, view.data());
-
+			Chan::ChMat44 projView = proj * view;
+			glUniformMatrix4fv(m_ProjViewLoc, 1, GL_FALSE, projView.data());
 			glBindVertexArray(m_VAO);
 			glDrawArrays(GL_LINES, 0, m_count);
 		}
@@ -172,8 +168,7 @@ private:
 	unsigned m_VBO[2];
 
 	GLuint m_program;
-	GLuint m_ProjLoc;
-	GLuint m_ViewLoc;
+	GLuint m_ProjViewLoc;
 
 	void prepareData()
 	{
@@ -306,6 +301,8 @@ bool TempTest()
 	size_t vec3 = sizeof(Chan::ChVector4);
 
 	
+	const Chan::ChVector3 t(1, 0, 0);
+	const float ff = t[0];
 	
 	std::cout << "Test Done\n";
 
