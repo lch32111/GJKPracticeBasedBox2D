@@ -7,7 +7,6 @@
 #include <string>
 
 // TODO LIST
-// 1. CGRenderLine Shader and other code update
 // 2. Key Input processing (rotate, translate on polygon)
 // 3. Point Rendering for closest points
 // 4. Make sample polygons for testing the GJK algorithm
@@ -205,6 +204,34 @@ private:
 
 bool TempTest();
 
+void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	if (action == GLFW_PRESS || GLFW_REPEAT)
+	{
+		switch (key)
+		{
+		case GLFW_KEY_W:
+			std::cout << "W pressed\n";
+			goto Final;
+		case GLFW_KEY_A:
+			std::cout << "A pressed\n";
+			goto Final;
+		case GLFW_KEY_S:
+			std::cout << "S pressed\n";
+			goto Final;
+		case GLFW_KEY_D:
+			std::cout << "D pressed\n";
+			goto Final;
+		}
+	}
+	else if (action == GLFW_RELEASE)
+	{
+		
+	}
+Final:
+	return;
+}
+
 int main()
 {
 	assert(TempTest());
@@ -218,6 +245,13 @@ int main()
 	gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
 	//glfwSetInputMode(gWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+	// glfwSetFramebufferSizeCallback(gWindow, framebuffer_size_callback);
+	// glfwSetCursorPosCallback(gWindow, cursorPos_callback);
+	// glfwSetMouseButtonCallback(gWindow, mouseButton_callback);
+	// glfwSetScrollCallback(gWindow, scroll_callback);
+	glfwSetKeyCallback(gWindow, keyCallback);
+
 	glfwSwapInterval(0);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
