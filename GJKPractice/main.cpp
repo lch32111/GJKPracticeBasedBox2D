@@ -8,40 +8,12 @@
 #include "chGL.h"
 
 // TODO LIST
-// 3. Point Rendering for closest points
 // 4. Make sample polygons for testing the GJK algorithm
 
 GLFWwindow* gWindow;
 
 bool TempTest();
-
-void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-	if (action == GLFW_PRESS || GLFW_REPEAT)
-	{
-		switch (key)
-		{
-		case GLFW_KEY_W:
-			std::cout << "W pressed\n";
-			goto Final;
-		case GLFW_KEY_A:
-			std::cout << "A pressed\n";
-			goto Final;
-		case GLFW_KEY_S:
-			std::cout << "S pressed\n";
-			goto Final;
-		case GLFW_KEY_D:
-			std::cout << "D pressed\n";
-			goto Final;
-		}
-	}
-	else if (action == GLFW_RELEASE)
-	{
-		
-	}
-Final:
-	return;
-}
+void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 int main()
 {
@@ -97,6 +69,34 @@ int main()
 
 	glfwTerminate();
 	return 0;
+}
+
+void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	if (action == GLFW_PRESS || GLFW_REPEAT)
+	{
+		switch (key)
+		{
+		case GLFW_KEY_W:
+			std::cout << "W pressed\n";
+			goto Final;
+		case GLFW_KEY_A:
+			std::cout << "A pressed\n";
+			goto Final;
+		case GLFW_KEY_S:
+			std::cout << "S pressed\n";
+			goto Final;
+		case GLFW_KEY_D:
+			std::cout << "D pressed\n";
+			goto Final;
+		}
+	}
+	else if (action == GLFW_RELEASE)
+	{
+
+	}
+Final:
+	return;
 }
 
 bool TempTest()
