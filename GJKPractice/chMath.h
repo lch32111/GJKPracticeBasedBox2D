@@ -31,13 +31,7 @@ namespace Chan
 #define Chreal_abs fabs
 #endif
 
-	class ChVecCommon
-	{
-		virtual ChReal* data() = 0;
-		virtual const ChReal* data() const = 0;
-	};
-
-	class ChVector2 : ChVecCommon
+	class ChVector2
 	{
 	public:
 		ChVector2() { }
@@ -84,7 +78,7 @@ namespace Chan
 		ChReal y;
 	};
 
-	class ChVector3 : ChVecCommon
+	class ChVector3
 	{
 	public:
 		ChVector3() { }
@@ -105,7 +99,7 @@ namespace Chan
 		ChReal z;
 	};
 
-	class ChVector4 : ChVecCommon
+	class ChVector4
 	{
 	public:
 		ChVector4() { }
@@ -127,7 +121,7 @@ namespace Chan
 		ChReal w;
 	};
 
-	class ChMat22 : ChVecCommon
+	class ChMat22
 	{
 	public:
 		ChMat22() { }
@@ -163,7 +157,7 @@ namespace Chan
 		ChVector2 col1, col2;
 	};
 
-	class ChMat44 : ChVecCommon
+	class ChMat44
 	{
 	public:
 		ChMat44() { }

@@ -112,6 +112,15 @@ public:
 		prepareData();
 	}
 
+	~CGRenderLine()
+	{
+		glDeleteProgram(m_program), m_program = 0;
+		glDeleteBuffers(2, m_VBO);
+		glDeleteVertexArrays(1, &m_VAO);
+		
+		m_count = 0;
+	}
+
 	void insertLine(const Chan::ChVector3& From, const Chan::ChVector3& To, const Chan::ChVector3& Color)
 	{
 		assert(m_count < e_maxVertices);
@@ -129,10 +138,6 @@ public:
 	{
 		if (m_count == 0) return;
 
-		glUniformMatrix4fv(m_ProjLoc, 1, GL_FALSE, proj.data());
-		glUniformMatrix4fv(m_ViewLoc, 1, GL_FALSE, view.data());
-
-		glBindVertexArray(m_VAO);
 		// Vertex Buffer
 		glBindBuffer(GL_ARRAY_BUFFER, m_VBO[0]);
 		glBufferSubData(GL_ARRAY_BUFFER, 0, m_count * sizeof(Chan::ChVector3), m_vertices[0].data());
@@ -141,12 +146,18 @@ public:
 		glBindBuffer(GL_ARRAY_BUFFER, m_VBO[1]);
 		glBufferSubData(GL_ARRAY_BUFFER, 0, m_count * sizeof(Chan::ChVector3), m_colors[0].data());
 
-		glDrawArrays(GL_LINES, 0, m_count);
+		glUseProgram(m_program);
+		{
+			glUniformMatrix4fv(m_ProjLoc, 1, GL_FALSE, proj.data());
+			glUniformMatrix4fv(m_ViewLoc, 1, GL_FALSE, view.data());
 
+			glBindVertexArray(m_VAO);
+			glDrawArrays(GL_LINES, 0, m_count);
+		}
+		
 		// Setting Default again
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glBindVertexArray(0);
-		glLineWidth(1.0);
 
 		m_count = 0;
 	}
@@ -171,18 +182,19 @@ private:
 		glGenBuffers(2, m_VBO);
 
 		glBindVertexArray(m_VAO);
+		glEnableVertexAttribArray(0); // vertex
+		glEnableVertexAttribArray(1); // color
 
 		// Vertex Buffer
 		glBindBuffer(GL_ARRAY_BUFFER, m_VBO[0]);
-		glEnableVertexAttribArray(0); // vertex
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(m_vertices), m_vertices, GL_DYNAMIC_DRAW);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+		
 
 		// Color Buffer
 		glBindBuffer(GL_ARRAY_BUFFER, m_VBO[1]);
-		glEnableVertexAttribArray(1); // color
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(m_colors), m_colors, GL_DYNAMIC_DRAW);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glBindVertexArray(0);
@@ -191,9 +203,11 @@ private:
 	}
 };
 
+bool TempTest();
+
 int main()
 {
-	std::cout << "Hello World!\n";
+	assert(TempTest());
 
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -234,4 +248,32 @@ int main()
 
 	glfwTerminate();
 	return 0;
+}
+
+bool TempTest()
+{
+	std::cout << "Hello World\n";
+
+	Chan::ChVector4 p1(0, 0, 0, 0);
+	Chan::ChVector4 p2(0.5, 0, 0, 0);
+	
+	Chan::ChVector4 container[2];
+	container[0] = p1;
+	container[1] = p2;
+
+	float* entryPoint = &(container[0].x);
+	float testContainer[8] = { -1, };
+	for (int i = 0; i < 8; ++i)
+	{
+		testContainer[i] = *(entryPoint + i);
+		std::cout << *(entryPoint + i) << '\n';
+	}
+	
+	size_t vec3 = sizeof(Chan::ChVector4);
+
+	
+	
+	std::cout << "Test Done\n";
+
+	return true;
 }
