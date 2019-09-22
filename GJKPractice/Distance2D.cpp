@@ -27,12 +27,12 @@ Chan::ChVector2 Chan::Simplex::GetSearchDirection() const
 	{
 		ChVector2 edgeAB = m_vertexB.point - m_vertexA.point;
 		ChReal sgn = Cross(edgeAB, -m_vertexA.point);
-		if (sgn > ChReal(0.0))
+		if (sgn > ChReal(0.0)) // CounterClockWise ABO
 		{
 			// Origin is left of edgeAB.
 			return Cross(ChReal(1.0), edgeAB);
 		}
-		else
+		else // ClockWise ABO
 		{
 			// Origin is right of edgeAB
 			return Cross(edgeAB, ChReal(1.0));
