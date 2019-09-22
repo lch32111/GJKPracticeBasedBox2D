@@ -8,8 +8,13 @@
 #include <glad/glad.h>
 
 #include "chMath.h"
+#include "Distance2D.h"
 
-bool checkCompileErrors(GLuint shader, std::string type);
+class CGRenderLine;
+void insertPolygon(CGRenderLine& lR, 
+	const Chan::Polygon& p, 
+	const Chan::ChTransform& t,
+	const Chan::ChVector3& color);
 
 class CGRenderLine
 {
@@ -60,5 +65,7 @@ private:
 
 	void prepareGLObject();
 };
+
+bool checkCompileErrors(GLuint shader, std::string type);
 
 #endif

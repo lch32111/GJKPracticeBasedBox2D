@@ -31,6 +31,8 @@ namespace Chan
 #define Chreal_abs fabs
 #endif
 
+#define Chreal_pi 3.14159265359
+
 	class ChVector2
 	{
 	public:
@@ -57,6 +59,12 @@ namespace Chan
 		void operator *= (const ChVector2& v)
 		{
 			x *= v.x; y *= v.y;
+		}
+
+		ChVector2& operator = (const ChVector2& v)
+		{
+			x = v.x; y = v.y;
+			return *this;
 		}
 
 		ChReal operator[](unsigned i) const
@@ -88,6 +96,8 @@ namespace Chan
 	{
 	public:
 		ChVector3() { }
+		ChVector3(const ChVector2& v, ChReal _z)
+			: x(v.x), y(v.y), z(_z) { }
 		ChVector3(ChReal _x, ChReal _y, ChReal _z) 
 			: x(_x), y(_y), z(_z) { }
 
@@ -181,6 +191,13 @@ namespace Chan
 			return cols[i];
 		}
 
+		ChMat22& operator=(const ChMat22& m)
+		{
+			cols[0] = m.cols[0];
+			cols[1] = m.cols[1];
+			return *this;
+		}
+
 		ChReal* data() { return cols[0].data(); }
 		const ChReal* data() const { return cols[0].data(); }
 
@@ -191,7 +208,9 @@ namespace Chan
 	{
 	public:
 		ChMat44() { }
-
+		ChMat44(ChReal v)
+			: cols{{v, 0, 0, 0},  {0, v, 0, 0}, {0, 0, v, 0}, {0, 0, 0, v}}
+		{ }
 		ChMat44(const ChVector4& col0, const ChVector4& col1,
 			const ChVector4& col2, const ChVector4& col3)
 			: cols{col0, col1, col2, col3}
@@ -381,6 +400,11 @@ namespace Chan
 	inline ChReal Distance(const ChVector2& a, const ChVector2& b)
 	{
 		return ChReal_sqrt(dot(a, b));
+	}
+
+	inline ChReal radians(const ChReal& r)
+	{
+		return r / ChReal(180.0) * ChReal(Chreal_pi);
 	}
 
 	template<typename T> inline void Swap(T& a, T& b)

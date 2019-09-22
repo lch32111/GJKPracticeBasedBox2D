@@ -6,18 +6,22 @@
 
 #include "chMath.h"
 #include "chGL.h"
+#include "Distance2D.h"
 
-// TODO LIST
-// 4. Make sample polygons for testing the GJK algorithm
+// TODO List : test environment implemented
+// 1. Study GJK
+// 2. Debug Algorithm
+// 3. Apply ur own collision detection algorithm to ur engine.
 
-GLFWwindow* gWindow;
-
-bool TempTest();
+bool UnitTest();
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
+GLFWwindow* gWindow;
+Chan::ChTransform triTransform;
+Chan::ChTransform quadTransform;
 int main()
 {
-	assert(TempTest());
+	assert(UnitTest());
 
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -27,29 +31,41 @@ int main()
 
 	gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
-	//glfwSetInputMode(gWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-	// glfwSetFramebufferSizeCallback(gWindow, framebuffer_size_callback);
-	// glfwSetCursorPosCallback(gWindow, cursorPos_callback);
-	// glfwSetMouseButtonCallback(gWindow, mouseButton_callback);
-	// glfwSetScrollCallback(gWindow, scroll_callback);
 	glfwSetKeyCallback(gWindow, keyCallback);
-
 	glfwSwapInterval(0);
+
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 
-	Chan::ChVector4 x(1, 0, 0, 0);
-	Chan::ChVector4 y(0, 1, 0, 0);
-	Chan::ChVector4 z(0, 0, 1, 0);
-	Chan::ChVector4 w(0, 0, 0, 1);
-	Chan::ChMat44 iden(x, y, z, w);
+	CGRenderLine lR;
+	CGRenderPoint pR;
 
-	Chan::ChVector3 p1(0, 0, 0);
-	Chan::ChVector3 p2(0.5, 0, 0);
+	const Chan::ChVector2 tris[3] =
+	{
+		Chan::ChVector2(-0.3f, 0.0f),
+		Chan::ChVector2(0.0f, 0.3f),
+		Chan::ChVector2(0.3f, 0.0f)
+	};
 
-	CGRenderLine lineRenderer;
-	CGRenderPoint pointRenderer;
+	Chan::Polygon triangle;
+	triangle.m_points = tris;
+	triangle.m_count = 3;
+	triTransform.p = Chan::ChVector2(0, 0);
+	triTransform.R = Chan::ChMat22(Chan::radians(45.0f));
+
+	const Chan::ChVector2 quads[4] = 
+	{
+		Chan::ChVector2(-0.2, -0.2),
+		Chan::ChVector2(-0.2, 0.2),
+		Chan::ChVector2(0.2, 0.2),
+		Chan::ChVector2(0.2, -0.2)
+	};
+
+	Chan::Polygon quad;
+	quad.m_points = quads;
+	quad.m_count = 4;
+	quadTransform.p = Chan::ChVector2(0.5, 0.5);
+	quadTransform.R = Chan::ChMat22(Chan::radians(0.0f));
 
 	while (!glfwWindowShouldClose(gWindow))
 	{
@@ -58,11 +74,23 @@ int main()
 		glClearColor(0.2, 0.2, 0.2, 1.0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		lineRenderer.insertLine(p1, p2, Chan::ChVector3(1, 1, 1));
-		pointRenderer.insertPoint(p1, Chan::ChVector3(1, 0, 0), 10);
+		Chan::Input firstTest;
+		firstTest.polygon1 = triangle;
+		firstTest.polygon2 = quad;
+		firstTest.transform1 = triTransform;
+		firstTest.transform2 = quadTransform;
 
-		lineRenderer.renderLine(iden, iden);
-		pointRenderer.renderPoint(iden, iden);
+		Chan::Output testResult;
+
+		Chan::Distance2D(&testResult, firstTest);
+
+		pR.insertPoint(Chan::ChVector3(testResult.point1, 0), Chan::ChVector3(1, 0, 0), 10.f);
+		pR.insertPoint(Chan::ChVector3(testResult.point2, 0), Chan::ChVector3(0, 1, 0), 10.f);
+		insertPolygon(lR, triangle, triTransform, Chan::ChVector3(0.7, 0.2, 0.4));
+		insertPolygon(lR, quad, quadTransform, Chan::ChVector3(0.1, 0.4, 0.8));
+
+		lR.renderLine(Chan::ChMat44(1.f), Chan::ChMat44(1.f), 2.f);
+		pR.renderPoint(Chan::ChMat44(1.f), Chan::ChMat44(1.f));
 
 		glfwSwapBuffers(gWindow);
 	}
@@ -71,35 +99,56 @@ int main()
 	return 0;
 }
 
+static bool Key1Pressed = false;
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
+	static bool what = false;
+	Chan::ChTransform* object = what ? &triTransform : &quadTransform;
+
 	if (action == GLFW_PRESS || GLFW_REPEAT)
 	{
 		switch (key)
 		{
+		case GLFW_KEY_1:
+		{
+			if (!Key1Pressed)
+			{
+				what = !what;
+				Key1Pressed = true;
+			}
+			goto Final;
+		}
 		case GLFW_KEY_W:
-			std::cout << "W pressed\n";
+			object->p += Chan::ChVector2(0, 0.05);
 			goto Final;
 		case GLFW_KEY_A:
-			std::cout << "A pressed\n";
+			object->p += Chan::ChVector2(-0.05, 0.0);
 			goto Final;
 		case GLFW_KEY_S:
-			std::cout << "S pressed\n";
+			object->p += Chan::ChVector2(0.0 , -0.05);
 			goto Final;
 		case GLFW_KEY_D:
-			std::cout << "D pressed\n";
+			object->p += Chan::ChVector2(0.05, 0.0);
+			goto Final;
+
+		case GLFW_KEY_R:
 			goto Final;
 		}
 	}
 	else if (action == GLFW_RELEASE)
 	{
-
+		switch (key)
+		{
+		case GLFW_KEY_1:
+			if (Key1Pressed) Key1Pressed = false;
+			goto Final;
+		}
 	}
 Final:
 	return;
 }
 
-bool TempTest()
+bool UnitTest()
 {
 	std::cout << "Hello World\n";
 
@@ -125,5 +174,5 @@ bool TempTest()
 	
 	std::cout << "Test Done\n";
 
-	return true;
+	return vec4 == 16;
 }

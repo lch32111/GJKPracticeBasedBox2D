@@ -1,37 +1,16 @@
 #include "chGL.h"
 
-bool checkCompileErrors(GLuint shader, std::string type)
+void insertPolygon(CGRenderLine& lR, const Chan::Polygon& p, const Chan::ChTransform& t, const Chan::ChVector3& color)
 {
-	GLint success;
-	GLchar infoLog[1024];
-
-	if (type != "PROGRAM")
+#define WorldPoint(i) Chan::ChVector3(t.R * p.m_points[i] + t.p, 0.f)
+	for (int i = 0; i < p.m_count; ++i)
 	{
-		glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-		if (!success)
-		{
-			glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-			std::cout << "ERROR::SHADER_COMPILATION_ERROR of type: "
-				<< type << " \n"
-				<< infoLog << std::endl;
+		int next = i + 1;
+		if (next == p.m_count) next = 0;
 
-			return false;
-		}
+		lR.insertLine(WorldPoint(i), WorldPoint(next), color);
 	}
-	else
-	{
-		glGetProgramiv(shader, GL_LINK_STATUS, &success);
-		if (!success)
-		{
-			glGetProgramInfoLog(shader, 1024, NULL, infoLog);
-			std::cout << "ERROR::PROGRAM_LINKING_ERROR of type: "
-				<< type << "\n"
-				<< infoLog << std::endl;
-			return false;
-		}
-	}
-
-	return true;
+#undef WorldPoint
 }
 
 CGRenderLine::CGRenderLine()
@@ -312,4 +291,38 @@ void CGRenderPoint::prepareGLObject()
 	glBindVertexArray(0);
 
 	m_count = 0;
+}
+
+bool checkCompileErrors(GLuint shader, std::string type)
+{
+	GLint success;
+	GLchar infoLog[1024];
+
+	if (type != "PROGRAM")
+	{
+		glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+		if (!success)
+		{
+			glGetShaderInfoLog(shader, 1024, NULL, infoLog);
+			std::cout << "ERROR::SHADER_COMPILATION_ERROR of type: "
+				<< type << " \n"
+				<< infoLog << std::endl;
+
+			return false;
+		}
+	}
+	else
+	{
+		glGetProgramiv(shader, GL_LINK_STATUS, &success);
+		if (!success)
+		{
+			glGetProgramInfoLog(shader, 1024, NULL, infoLog);
+			std::cout << "ERROR::PROGRAM_LINKING_ERROR of type: "
+				<< type << "\n"
+				<< infoLog << std::endl;
+			return false;
+		}
+	}
+
+	return true;
 }
