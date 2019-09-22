@@ -53,7 +53,7 @@ Chan::ChVector2 Chan::Simplex::GetClosestPoint() const
 
 	case 2:
 	{
-		ChReal s = ChReal(1.0) / m_divisor;
+		ChReal s = static_cast<ChReal>(1.0) / m_divisor;
 		return (s * m_vertexA.u) * m_vertexA.point + (s * m_vertexB.u) * m_vertexB.point;
 	}
 
@@ -102,6 +102,7 @@ void Chan::Simplex::GetWitnessPoints(ChVector2 * point1, ChVector2 * point2) con
 }
 
 // Closest point on line segment to Q
+// Voronoi regions : A, B, AB
 void Chan::Simplex::Solve2(const ChVector2 & Q)
 {
 	ChVector2 A = m_vertexA.point;
@@ -190,7 +191,7 @@ void Chan::Simplex::Solve3(const ChVector2 & Q)
 		return;
 	}
 
-	// Computesigned triangle area.
+	// Compute signed triangle area.
 	ChReal area = Cross(B - A, C - A);
 
 	// Compute triangle barycentric coordinates (pre-division).
@@ -238,7 +239,12 @@ void Chan::Simplex::Solve3(const ChVector2 & Q)
 
 	// Region ABC
 	// The triangle area is guaranteed to be non-zero.
-	assert(uABC > ChReal(0.0) && vABC > ChReal(0.0) && wABC > ChReal(0.0));
+	assert
+	( 
+		(uABC > ChReal(0.0) && vABC > ChReal(0.0) && wABC > ChReal(0.0)) ||
+		(uABC < ChReal(0.0) && vABC < ChReal(0.0) && wABC < ChReal(0.0))
+	);
+
 	m_vertexA.u = uABC;
 	m_vertexB.u = vABC;
 	m_vertexC.u = wABC;
@@ -330,9 +336,9 @@ void Chan::Distance2D(Output * output, const Input & input)
 
 		// Compute a tentative new simplex vertex using support points.
 		SimplexVertex* vertex = vertices + simplex.m_count;
-		vertex->index1 = polygon1->GetSupport(transform1.R * -d);
+		vertex->index1 = polygon1->GetSupport(transform1.R.Transpose() * -d);
 		vertex->point1 = Mul(transform1, polygon1->m_points[vertex->index1]);
-		vertex->index2 = polygon1->GetSupport(transform2.R * d);
+		vertex->index2 = polygon2->GetSupport(transform2.R.Transpose() * d);
 		vertex->point2 = Mul(transform2, polygon2->m_points[vertex->index2]);
 		vertex->point = vertex->point2 - vertex->point1;
 

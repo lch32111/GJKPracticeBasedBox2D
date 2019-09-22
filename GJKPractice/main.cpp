@@ -40,32 +40,32 @@ int main()
 	CGRenderLine lR;
 	CGRenderPoint pR;
 
-	const Chan::ChVector2 tris[3] =
+	Chan::ChVector2 tris[3] =
 	{
-		Chan::ChVector2(-0.3f, 0.0f),
-		Chan::ChVector2(0.0f, 0.3f),
-		Chan::ChVector2(0.3f, 0.0f)
+		Chan::ChVector2(1.f, 0.0f),
+		Chan::ChVector2(0.0f, 1.f),
+		Chan::ChVector2(-1.f, 0.0f),
 	};
 
 	Chan::Polygon triangle;
 	triangle.m_points = tris;
 	triangle.m_count = 3;
 	triTransform.p = Chan::ChVector2(0, 0);
-	triTransform.R = Chan::ChMat22(Chan::radians(45.0f));
+	triTransform.R = Chan::ChMat22(Chan::Radians(0.0f));
 
 	const Chan::ChVector2 quads[4] = 
 	{
-		Chan::ChVector2(-0.2, -0.2),
-		Chan::ChVector2(-0.2, 0.2),
-		Chan::ChVector2(0.2, 0.2),
-		Chan::ChVector2(0.2, -0.2)
+		Chan::ChVector2(-1, -1),
+		Chan::ChVector2(1, -1),
+		Chan::ChVector2(1, 1),
+		Chan::ChVector2(-1, 1)
 	};
 
 	Chan::Polygon quad;
 	quad.m_points = quads;
 	quad.m_count = 4;
-	quadTransform.p = Chan::ChVector2(0.5, 0.5);
-	quadTransform.R = Chan::ChMat22(Chan::radians(0.0f));
+	quadTransform.p = Chan::ChVector2(3, 3);
+	quadTransform.R = Chan::ChMat22(Chan::Radians(0.0f));
 
 	while (!glfwWindowShouldClose(gWindow))
 	{
@@ -86,11 +86,13 @@ int main()
 
 		pR.insertPoint(Chan::ChVector3(testResult.point1, 0), Chan::ChVector3(1, 0, 0), 10.f);
 		pR.insertPoint(Chan::ChVector3(testResult.point2, 0), Chan::ChVector3(0, 1, 0), 10.f);
+		lR.insertLine(Chan::ChVector3(testResult.point1, 0), Chan::ChVector3(testResult.point2, 0), Chan::ChVector3(0.81, 0.4, 0.5));
 		insertPolygon(lR, triangle, triTransform, Chan::ChVector3(0.7, 0.2, 0.4));
 		insertPolygon(lR, quad, quadTransform, Chan::ChVector3(0.1, 0.4, 0.8));
 
-		lR.renderLine(Chan::ChMat44(1.f), Chan::ChMat44(1.f), 2.f);
-		pR.renderPoint(Chan::ChMat44(1.f), Chan::ChMat44(1.f));
+		Chan::ChMat44 proj = Chan::Ortho(-5.f, 5.f, -5.f, 5.f);
+		lR.renderLine(proj, Chan::ChMat44(1.f), 2.f);
+		pR.renderPoint(proj, Chan::ChMat44(1.f));
 
 		glfwSwapBuffers(gWindow);
 	}

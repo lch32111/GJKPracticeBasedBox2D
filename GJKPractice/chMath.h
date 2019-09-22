@@ -402,9 +402,19 @@ namespace Chan
 		return ChReal_sqrt(dot(a, b));
 	}
 
-	inline ChReal radians(const ChReal& r)
+	inline ChReal Radians(const ChReal& r)
 	{
 		return r / ChReal(180.0) * ChReal(Chreal_pi);
+	}
+
+	inline ChMat44 Ortho(ChReal left, ChReal right, ChReal bottom, ChReal top)
+	{
+		ChMat44 Result(1.0);
+		Result[0][0] = static_cast<ChReal>(2) / (right - left);
+		Result[1][1] = static_cast<ChReal>(2) / (top - bottom);
+		Result[3][0] = -(right + left) / (right - left);
+		Result[3][1] = -(top + bottom) / (top - bottom);
+		return Result;
 	}
 
 	template<typename T> inline void Swap(T& a, T& b)
