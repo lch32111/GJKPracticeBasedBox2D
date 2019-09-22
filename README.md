@@ -5,4 +5,4 @@ This is a repository for practicing GJK algorithm, based on GDC 2010 Presentatio
 
 Result : 
 
-![GJKResult](E:\###Visual Studio Project Folder###\Visual Studio 2017\Projects\GJKPrac\GJKPracticeBasedBox2D\GJKResult.PNG)
+![GJKResult](https://github.com/lch32111/GJKPracticeBasedBox2D/blob/master/GJKResult.PNG)
