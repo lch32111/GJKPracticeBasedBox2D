@@ -148,14 +148,9 @@ else
 To understand the code above, We need some of linear algebra. However, I can't explain all of things here. I replace it with the link : https://www.cs.cmu.edu/~quake/robust.html
 
 Anyway, I will use the mathematics why the code is like this.
-$$
-edgeAB = (b_x - a_x, b_y - a_y) \\
-edgeAO = (o_x - a_x, o_y - a_y)\\
-R =Cross(edgeAB, edgeAO) = (b_x -a_x)(o_y - a_y) - (b_y -a_y)(o_x-a_x) \\
 
-\therefore \triangle  BOA \textrm{ is counter-clockwise if}\ R \ > \ 0\\
-\textrm{otherwise, it's clockwise}
-$$
+![Orientation2D](https://github.com/lch32111/GJKPracticeBasedBox2D/blob/master/Orientation2D.PNG)
+
 ![Case2](https://github.com/lch32111/GJKPracticeBasedBox2D/blob/master/Case2.PNG)
 
 
