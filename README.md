@@ -5,7 +5,7 @@ This is a repository for practicing GJK algorithm, based on GDC 2010 Presentatio
 
 Result : 
 
-![GJKResult](E:\###Visual Studio Project Folder###\Visual Studio 2017\Projects\GJKPrac\GJKPracticeBasedBox2D\GJKResult.PNG)
+![GJKResult](https://github.com/lch32111/GJKPracticeBasedBox2D/blob/master/GJKResult.PNG)
 
 
 
@@ -156,7 +156,7 @@ R =Cross(edgeAB, edgeAO) = (b_x -a_x)(o_y - a_y) - (b_y -a_y)(o_x-a_x) \\
 \therefore \triangle  BOA \textrm{ is counter-clockwise if}\ R \ > \ 0\\
 \textrm{otherwise, it's clockwise}
 $$
-![Case2](E:\###Visual Studio Project Folder###\Visual Studio 2017\Projects\GJKPrac\GJKPracticeBasedBox2D\Case2.PNG)
+![Case2](https://github.com/lch32111/GJKPracticeBasedBox2D/blob/master/Case2.PNG)
 
 
 
