@@ -27,13 +27,15 @@ Chan::ChVector2 Chan::Simplex::GetSearchDirection() const
 	{
 		ChVector2 edgeAB = m_vertexB.point - m_vertexA.point;
 		ChReal sgn = Cross(edgeAB, -m_vertexA.point);
-		if (sgn > ChReal(0.0)) // CounterClockWise ABO
+		if (sgn > ChReal(0.0)) // CounterClockWise BOA
 		{
+			// Turn Left 1-Simplex, the line-segment AB
 			// Origin is left of edgeAB.
 			return Cross(ChReal(1.0), edgeAB);
 		}
-		else // ClockWise ABO
+		else // ClockWise BOA
 		{
+			// Turn Right 1-simplex, the line-segment AB
 			// Origin is right of edgeAB
 			return Cross(edgeAB, ChReal(1.0));
 		}
