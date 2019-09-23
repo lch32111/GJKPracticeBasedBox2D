@@ -3,6 +3,8 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
 #include "chMath.h"
 #include "chGL.h"
@@ -14,6 +16,7 @@
 // 3. Apply ur own collision detection algorithm to ur engine.
 
 bool UnitTest();
+bool initFreeType();
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 GLFWwindow* gWindow;
@@ -22,6 +25,7 @@ Chan::ChTransform quadTransform;
 int main()
 {
 	assert(UnitTest());
+	assert(initFreeType());
 
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -180,4 +184,35 @@ bool UnitTest()
 	std::cout << "Test Done\n";
 
 	return vec4 == 16;
+}
+
+bool initFreeType()
+{
+	bool fail = true;
+
+	FT_Library ft;
+	if ((fail = FT_Init_FreeType(&ft)))
+	{
+		std::cout << "ERROR::FREETYPE: Could not init FreeType Library" << std::endl;
+		goto Final;
+	}
+
+	FT_Face face;
+	if ((fail = FT_New_Face(ft, "fonts/arial.ttf", 0, &face)))
+	{
+		std::cout << "ERROR::FREETYPE: Failed to load font" << std::endl;
+		goto Final;
+	}
+
+	FT_Set_Pixel_Sizes(face, 0, 48);
+
+	if ((fail = FT_Load_Char(face, 'X', FT_LOAD_RENDER)))
+	{
+		std::cout << "ERROR::FREETYTPE: Failed to load Glyph" << std::endl;
+		goto Final;
+	}
+
+Final:
+	if (fail) return false;
+	else return true;
 }
