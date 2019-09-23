@@ -397,9 +397,15 @@ namespace Chan
 		return v * (ChReal(1.0) / ChReal_sqrt(length));
 	}
 
+	inline ChReal DistanceSquared(const ChVector2& a, const ChVector2& b)
+	{
+		ChVector2 d = b - a;
+		return dot(d, d);
+	}
+
 	inline ChReal Distance(const ChVector2& a, const ChVector2& b)
 	{
-		return ChReal_sqrt(dot(a, b));
+		return ChReal_sqrt(DistanceSquared(a, b));
 	}
 
 	inline ChReal Radians(const ChReal& r)

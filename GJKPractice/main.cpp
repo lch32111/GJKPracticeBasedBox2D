@@ -84,6 +84,9 @@ int main()
 
 		Chan::Distance2D(&testResult, firstTest);
 
+		std::cout << "distance : " << testResult.distance 
+			<< " / iteration : " << testResult.iterations << '\n';
+
 		pR.insertPoint(Chan::ChVector3(testResult.point1, 0), Chan::ChVector3(1, 0, 0), 10.f);
 		pR.insertPoint(Chan::ChVector3(testResult.point2, 0), Chan::ChVector3(0, 1, 0), 10.f);
 		lR.insertLine(Chan::ChVector3(testResult.point1, 0), Chan::ChVector3(testResult.point2, 0), Chan::ChVector3(0.81, 0.4, 0.5));
