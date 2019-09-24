@@ -98,13 +98,23 @@ void CGRenderLine::renderLine(const Chan::ChMat44& proj, const Chan::ChMat44& vi
 {
 	if (m_count == 0) return;
 
+	size_t dataSize = m_count * sizeof(Chan::ChVector3);
+	
 	// Vertex Buffer
 	glBindBuffer(GL_ARRAY_BUFFER, m_VBO[0]);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, m_count * sizeof(Chan::ChVector3), m_vertices[0].data());
-
+	{
+		void* mapP = glMapBufferRange(GL_ARRAY_BUFFER, 0, dataSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+		memcpy(mapP, m_vertices[0].data(), dataSize);
+		glUnmapBuffer(GL_ARRAY_BUFFER);
+	}
+	
 	// Color Buffer
 	glBindBuffer(GL_ARRAY_BUFFER, m_VBO[1]);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, m_count * sizeof(Chan::ChVector3), m_colors[0].data());
+	{
+		void* mapP = glMapBufferRange(GL_ARRAY_BUFFER, 0, dataSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+		memcpy(mapP, m_colors[0].data(), dataSize);
+		glUnmapBuffer(GL_ARRAY_BUFFER);
+	}
 
 	glUseProgram(m_program);
 	{
@@ -232,17 +242,34 @@ void CGRenderPoint::renderPoint(const Chan::ChMat44& proj, const Chan::ChMat44& 
 {
 	if (m_count == 0) return;
 
+	size_t vcSize = m_count * sizeof(Chan::ChVector3);
+
 	// Vertex Buffer
 	glBindBuffer(GL_ARRAY_BUFFER, m_VBO[0]);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, m_count * sizeof(Chan::ChVector3), m_vertices[0].data());
-
+	{
+		void* mapP = glMapBufferRange(GL_ARRAY_BUFFER, 0, vcSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+		memcpy(mapP, m_vertices[0].data(), vcSize);
+		glUnmapBuffer(GL_ARRAY_BUFFER);
+	}
+	
 	// Color Buffer
 	glBindBuffer(GL_ARRAY_BUFFER, m_VBO[1]);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, m_count * sizeof(Chan::ChVector3), m_colors[0].data());
+	{
+		void* mapP = glMapBufferRange(GL_ARRAY_BUFFER, 0, vcSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+		memcpy(mapP, m_colors[0].data(), vcSize);
+		glUnmapBuffer(GL_ARRAY_BUFFER);
+	}
+
+	size_t sSize = m_count * sizeof(float);
 
 	// Size Buffer
 	glBindBuffer(GL_ARRAY_BUFFER, m_VBO[2]);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, m_count * sizeof(float), &(m_sizes[0]));
+	{
+		void* mapP = glMapBufferRange(GL_ARRAY_BUFFER, 0, vcSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+		memcpy(mapP, &m_sizes[0], sSize);
+		glUnmapBuffer(GL_ARRAY_BUFFER);
+	}
+	
 
 	glUseProgram(m_program);
 	{
