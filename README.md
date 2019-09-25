@@ -160,4 +160,19 @@ Now, I hope someone who read this will get to know why the equations and the cod
 So the first one is clear.
 
 
-
+## TODO
+1. Explain Closest point on line segment from solving the problem to getting a witness point
+2. Explain Closest point on triangle from solvin the problem to getting a witness point
+	- Utilize 1.
+	- Voronoi Region on Triangle
+	- Getting a witness point
+	- Fix Sample code
+3. Explain the structure of the loop on Distance2D() function
+	- structure
+	- terminate condition
+4. Code Optimization (reduce unnecessary work)
+5. Analyzing Box2D code on Distance2D
+	- GJK Optimization + enforcement + Caching
+	- GJK Raycast
+6. Study and Apply on 3D
+7. Boom! Done.
