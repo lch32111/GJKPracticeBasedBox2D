@@ -100,7 +100,7 @@ line_segment = edgeAB = m_vertexB.point - m_vertexA.point;
 
 ChReal s = static_cast<ChReal>(1.0) / m_divisor;
 ChReal P = (s * m_vertexA.u) * m_vertexA.point + (s * m_vertexB.u) * m_vertexB.point;
-SearchDirection = -P;
+SearchDirection = Q - P;
 Dot(line_segment, SearchDirection) == 0   
 ```
 
