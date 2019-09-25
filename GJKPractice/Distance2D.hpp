@@ -4,7 +4,7 @@
 // This header file has the purpose of practicing GJK from Box2D articles
 // I'm tracing the code for the practice
 
-#include "chMath.h"
+#include "chMath.hpp"
 
 namespace Chan
 {

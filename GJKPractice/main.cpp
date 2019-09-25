@@ -6,9 +6,9 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
-#include "chMath.h"
-#include "chGL.h"
-#include "Distance2D.h"
+#include "chMath.hpp"
+#include "chGL.hpp"
+#include "Distance2D.hpp"
 
 // TODO List : test environment implemented
 // 1. Study GJK
@@ -87,9 +87,6 @@ int main()
 		Chan::Output testResult;
 
 		Chan::Distance2D(&testResult, firstTest);
-
-		std::cout << "distance : " << testResult.distance 
-			<< " / iteration : " << testResult.iterations << '\n';
 
 		pR.insertPoint(Chan::ChVector3(testResult.point1, 0), Chan::ChVector3(1, 0, 0), 10.f);
 		pR.insertPoint(Chan::ChVector3(testResult.point2, 0), Chan::ChVector3(0, 1, 0), 10.f);

@@ -1,4 +1,4 @@
-#include "Distance2D.h"
+#include "Distance2D.hpp"
 
 int Chan::Polygon::GetSupport(const ChVector2 & d) const
 {
@@ -197,12 +197,12 @@ void Chan::Simplex::Solve3(const ChVector2 & Q)
 	ChReal area = Cross(B - A, C - A);
 
 	// Compute triangle barycentric coordinates (pre-division).
-	ChReal uABC = Cross(B - Q, C - Q);
-	ChReal vABC = Cross(C - Q, A - Q);
-	ChReal wABC = Cross(A - Q, B - Q);
+	ChReal uABC = area * Cross(B - Q, C - Q);
+	ChReal vABC = area * Cross(C - Q, A - Q);
+	ChReal wABC = area * Cross(A - Q, B - Q);
 
 	// Region AB
-	if (uAB > ChReal(0.0) && vAB > ChReal(0.0) && wABC * area <= ChReal(0.0))
+	if (uAB > ChReal(0.0) && vAB > ChReal(0.0) && wABC <= ChReal(0.0))
 	{
 		m_vertexA.u = uAB;
 		m_vertexB.u = vAB;
@@ -213,7 +213,7 @@ void Chan::Simplex::Solve3(const ChVector2 & Q)
 	}
 
 	// Region BC
-	if (uBC > ChReal(0.0) && vBC > ChReal(0.0) && uABC * area <= ChReal(0.0))
+	if (uBC > ChReal(0.0) && vBC > ChReal(0.0) && uABC <= ChReal(0.0))
 	{
 		m_vertexA = m_vertexB;
 		m_vertexB = m_vertexC;
@@ -226,7 +226,7 @@ void Chan::Simplex::Solve3(const ChVector2 & Q)
 	}
 
 	// Region CA
-	if (uCA > ChReal(0.0) && vCA > ChReal(0.0) && vABC * area <= ChReal(0.0))
+	if (uCA > ChReal(0.0) && vCA > ChReal(0.0) && vABC <= ChReal(0.0))
 	{
 		m_vertexB = m_vertexA;
 		m_vertexA = m_vertexC;
@@ -241,16 +241,12 @@ void Chan::Simplex::Solve3(const ChVector2 & Q)
 
 	// Region ABC
 	// The triangle area is guaranteed to be non-zero.
-	assert
-	( 
-		(uABC > ChReal(0.0) && vABC > ChReal(0.0) && wABC > ChReal(0.0)) ||
-		(uABC < ChReal(0.0) && vABC < ChReal(0.0) && wABC < ChReal(0.0))
-	);
+	assert(uABC > ChReal(0.0) && vABC > ChReal(0.0) && wABC > ChReal(0.0));
 
 	m_vertexA.u = uABC;
 	m_vertexB.u = vABC;
 	m_vertexC.u = wABC;
-	m_divisor = area;
+	m_divisor = uABC + vABC + wABC;
 	m_count = 3;
 }
 

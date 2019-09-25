@@ -10,10 +10,10 @@
 namespace Chan
 {
 	
-#define CH_MATH_PRECISION 1
+#define CH_SINGLE_PRECISION
+// #define CH_DOUBLE_PRECISION
 
-#if CH_MATH_PRECISION == 1
-
+#ifdef CH_SINGLE_PRECISION
 	typedef float ChReal;
 #define ChReal_sqrt sqrtf
 #define ChReal_cos cosf
@@ -21,7 +21,7 @@ namespace Chan
 #define Chreal_max FLT_MAX
 #define Chreal_epsilon 0.0001
 #define Chreal_abs fabsf
-#elif
+#elif defined(CH_DOUBLE_PRECISION)
 	typedef double ChReal;
 #define ChReal_sqrt std::sqrt
 #define ChReal_cos std::cos
@@ -29,6 +29,8 @@ namespace Chan
 #define Chreal_max DBL_MAX
 #define Chreal_epsilon 0.0001
 #define Chreal_abs fabs
+#else
+#error "You must define the precision in the chMath header file"
 #endif
 
 #define Chreal_pi 3.14159265359

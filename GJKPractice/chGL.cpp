@@ -1,4 +1,4 @@
-#include "chGL.h"
+#include "chGL.hpp"
 
 void insertPolygon(CGRenderLine& lR, const Chan::Polygon& p, const Chan::ChTransform& t, const Chan::ChVector3& color)
 {

@@ -7,8 +7,8 @@
 
 #include <glad/glad.h>
 
-#include "chMath.h"
-#include "Distance2D.h"
+#include "chMath.hpp"
+#include "Distance2D.hpp"
 
 class CGRenderLine;
 void insertPolygon(CGRenderLine& lR, 

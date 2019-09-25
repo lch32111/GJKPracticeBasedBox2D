@@ -15,13 +15,13 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="chMath.h">
+    <ClInclude Include="chMath.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Distance2D.h">
+    <ClInclude Include="chGL.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="chGL.h">
+    <ClInclude Include="Distance2D.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
