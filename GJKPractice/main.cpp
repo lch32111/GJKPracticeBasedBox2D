@@ -1,5 +1,15 @@
+#ifdef _DEBUG
+#define _CRTDBG_MAP_ALLOC
+#include <cstdlib>
+#include <crtdbg.h>
+
+#define DBG_NEW new(_NORMAL_BLOCK, __FILE__, __LINE__)
+#define new DBG_NEW
+#endif
+
 #include <iostream>
 #include <string>
+#include <map>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -15,6 +25,7 @@
 // 2. Debug Algorithm
 // 3. Apply ur own collision detection algorithm to ur engine.
 
+bool CRTMemorySet();
 bool UnitTest();
 bool initFreeType();
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
@@ -24,9 +35,9 @@ Chan::ChTransform triTransform;
 Chan::ChTransform quadTransform;
 int main()
 {
+	assert(CRTMemorySet());
 	assert(UnitTest());
-	assert(initFreeType());
-
+	int* a = new int[5];
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -37,6 +48,8 @@ int main()
 
 	glfwSetKeyCallback(gWindow, keyCallback);
 	glfwSwapInterval(0);
+
+	assert(initFreeType());
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
@@ -103,6 +116,19 @@ int main()
 
 	glfwTerminate();
 	return 0;
+}
+
+bool CRTMemorySet()
+{
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+	_CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_FILE);
+	_CrtSetReportFile(_CRT_WARN, _CRTDBG_FILE_STDOUT);
+	_CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_FILE);
+	_CrtSetReportFile(_CRT_ERROR, _CRTDBG_FILE_STDOUT);
+	_CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_FILE);
+	_CrtSetReportFile(_CRT_ASSERT, _CRTDBG_FILE_STDOUT);
+
+	return true;
 }
 
 static bool Key1Pressed = false;
@@ -183,6 +209,15 @@ bool UnitTest()
 	return vec4 == 16;
 }
 
+struct Character
+{
+	GLuint TextureID;			// ID handle of the glyph texture
+	Chan::ChVector2 Size;		// Size of glyph
+	Chan::ChVector2 Bearing;	// Offset from baseline to left/top of glyph
+	GLuint Advance;				// Offset to advance to next glyph
+};
+std::map<GLchar, Character> Characters;
+
 bool initFreeType()
 {
 	bool fail = true;
@@ -208,8 +243,56 @@ bool initFreeType()
 		std::cout << "ERROR::FREETYTPE: Failed to load Glyph" << std::endl;
 		goto Final;
 	}
+	
 
+	// Disable byte-alignment restriction
+	// 이후의 glReadPixels의 연산 뿐만 아니라, 텍스쳐 패턴의 unpacking에
+	// 영향을 미치는 pixel storage mode를 설정한다.
+	// 10개 중 4개의 storage parameters는 pixel data가 client memory에
+	// 어떻게 반환되는지 영향을 미친다.
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+	for (GLubyte c = 0; c < 128; ++c)
+	{
+		// Load character glyph
+		if (FT_Load_Char(face, c, FT_LOAD_RENDER))
+		{
+			std::cout << "ERROR::FREETYTPE: Failed to load Glyph" << std::endl;
+			goto Final;
+		}
+
+		// Generate Texeture
+		GLuint texture;
+		glGenTextures(1, &texture);
+		glBindTexture(GL_TEXTURE_2D, texture);
+		glTexImage2D(GL_TEXTURE_2D,
+			0,
+			GL_RED,
+			face->glyph->bitmap.width,
+			face->glyph->bitmap.rows,
+			0,
+			GL_RED,
+			GL_UNSIGNED_BYTE,
+			face->glyph->bitmap.buffer);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		Character character =
+		{
+			texture,
+			Chan::ChVector2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
+			Chan::ChVector2(face->glyph->bitmap_left, face->glyph->bitmap_top),
+			face->glyph->advance.x
+		};
+		Characters.insert(std::pair<GLchar, Character>(c, character));
+	}
 Final:
 	if (fail) return false;
 	else return true;
+
+	FT_Done_Face(face);
+	FT_Done_FreeType(ft);
 }
