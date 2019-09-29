@@ -1,5 +1,8 @@
 #include "chGL.hpp"
 
+#include <ft2build.h>
+#include FT_FREETYPE_H
+
 void insertPolygon(CGRenderLine& lR, const Chan::Polygon& p, const Chan::ChTransform& t, const Chan::ChVector3& color)
 {
 #define WorldPoint(i) Chan::ChVector3(t.R * p.m_points[i] + t.p, 0.f)
@@ -318,6 +321,226 @@ void CGRenderPoint::prepareGLObject()
 	glBindVertexArray(0);
 
 	m_count = 0;
+}
+
+CGRenderText::CGRenderText(int& Screen_Width, int& Screen_Height)
+	: m_scrWidth(Screen_Width), m_scrHeight(Screen_Height)
+{
+	FT_Library ft;
+	if (FT_Init_FreeType(&ft))
+	{
+		std::cout << "ERROR::FREETYPE: Could not init FreeType Library" << std::endl;
+		assert(0);
+	}
+
+	FT_Face face;
+	if (FT_New_Face(ft, "fonts/arial.ttf", 0, &face))
+	{
+		std::cout << "ERROR::FREETYPE: Failed to load font" << std::endl;
+		assert(0);
+	}
+
+	FT_Set_Pixel_Sizes(face, 0, 48);
+
+	if (FT_Load_Char(face, 'X', FT_LOAD_RENDER))
+	{
+		std::cout << "ERROR::FREETYTPE: Failed to load Glyph" << std::endl;
+		assert(0);
+	}
+
+	// Disable byte-alignment restriction
+	// 이후의 glReadPixels의 연산 뿐만 아니라, 텍스쳐 패턴의 unpacking에
+	// 영향을 미치는 pixel storage mode를 설정한다.
+	// 10개 중 4개의 storage parameters는 pixel data가 client memory에
+	// 어떻게 반환되는지 영향을 미친다.
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	for (GLubyte c = 0; c < 128; ++c)
+	{
+		// Load character glyph
+		if (FT_Load_Char(face, c, FT_LOAD_RENDER))
+		{
+			std::cout << "ERROR::FREETYTPE: Failed to load Glyph" << std::endl;
+			assert(0);
+		}
+
+		// Generate Texeture
+		GLuint texture;
+		glGenTextures(1, &texture);
+		glBindTexture(GL_TEXTURE_2D, texture);
+		glTexImage2D(GL_TEXTURE_2D,
+			0,
+			GL_R8,
+			face->glyph->bitmap.width,
+			face->glyph->bitmap.rows,
+			0,
+			GL_RED,
+			GL_UNSIGNED_BYTE,
+			face->glyph->bitmap.buffer);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		Character character =
+		{
+			texture,
+			Chan::ChVector2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
+			Chan::ChVector2(face->glyph->bitmap_left, face->glyph->bitmap_top),
+			face->glyph->advance.x
+		};
+		m_characters.insert(std::pair<GLchar, Character>(c, character));
+	}
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 4); // reset
+
+	FT_Done_Face(face);
+	FT_Done_FreeType(ft);
+
+	const char* vs =
+		"#version 330 core\n"
+		"layout (location = 0) in vec4 vertex;\n" // <vec2 pos, vec2 tex>
+		"out vec2 TexCoords;\n"
+		"uniform mat4 projection;\n"
+		"void main()\n"
+		"{\n"
+		"	gl_Position = projection * vec4(vertex.xy, 0.0, 1.0);\n"
+		"	TexCoords = vertex.zw;\n"
+		"}";
+	const char* fs =
+		"#version 330 core\n"
+		"in vec2 TexCoords;\n"
+		"out vec4 color;\n"
+		"uniform sampler2D text;\n"
+		"uniform vec3 textColor;\n"
+		"void main()\n"
+		"{\n"
+		"	vec4 sampled = vec4(1.0, 1.0, 1.0, texture(text, TexCoords).r);\n"
+		"	color = vec4(textColor, 1.0) * sampled;\n"
+		"}";
+
+	unsigned int vertex, fragment;
+
+	// vertex Shader
+	vertex = glCreateShader(GL_VERTEX_SHADER);
+	glShaderSource(vertex, 1, &vs, NULL);
+	glCompileShader(vertex);
+	if (checkCompileErrors(vertex, "VERTEX") == false)
+		assert(0);
+
+	// fragment shader
+	fragment = glCreateShader(GL_FRAGMENT_SHADER);
+	glShaderSource(fragment, 1, &fs, NULL);
+	glCompileShader(fragment);
+	if (checkCompileErrors(fragment, "FRAGMENT") == false)
+		assert(0);
+
+	// shader Program
+	m_program = glCreateProgram();
+	glAttachShader(m_program, vertex);
+	glAttachShader(m_program, fragment);
+	glLinkProgram(m_program);
+	if (checkCompileErrors(m_program, "PROGRAM") == false)
+		assert(0);
+
+	// delete the shaders as they're linked into our program now and no longer necessary
+	glDeleteShader(vertex);
+	glDeleteShader(fragment);
+
+	glUseProgram(m_program);
+	m_projLoc = glGetUniformLocation(m_program, "projection");
+	m_textSamplerLoc = glGetUniformLocation(m_program, "text");
+	m_textColorLoc = glGetUniformLocation(m_program, "textColor");
+
+	glUseProgram(0);
+
+	prepareGLObject();
+}
+
+CGRenderText::~CGRenderText()
+{
+	glDeleteProgram(m_program), m_program = 0;
+	glDeleteBuffers(1, &m_VBO);
+	glDeleteVertexArrays(1, &m_VAO);
+
+	std::map<GLchar, Character>::iterator it;
+	for (it = m_characters.begin(); it != m_characters.end(); ++it)
+		glDeleteTextures(1, &((*it).second.TextureID));
+}
+
+void CGRenderText::renderText(
+	const std::string& text, 
+	Chan::ChReal x, 
+	Chan::ChReal y, 
+	Chan::ChReal scale, 
+	const Chan::ChVector3& color)
+{
+	glUseProgram(m_program);
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	Chan::ChMat44 projection = Chan::Ortho(0.0f, m_scrWidth, 0.0, m_scrHeight);
+	glUniformMatrix4fv(m_projLoc, 1, GL_FALSE, projection.data());
+	glUniform3f(m_textColorLoc, color.x, color.y, color.z);
+	glActiveTexture(GL_TEXTURE0);
+	glBindVertexArray(m_VAO);
+
+	std::string::const_iterator c;
+	for (c = text.begin(); c != text.end(); ++c)
+	{
+		Character ch = m_characters[*c];
+
+		GLfloat xpos = x + ch.Bearing.x * scale;
+		GLfloat ypos = y - (ch.Size.y - ch.Bearing.y) * scale;
+
+		GLfloat w = ch.Size.x * scale;
+		GLfloat h = ch.Size.y * scale;
+
+		// Update VBO for each character
+		GLfloat vertices[6][4] =
+		{
+			{ xpos,     ypos + h,   0.0, 0.0 },
+			{ xpos,     ypos,       0.0, 1.0 },
+			{ xpos + w, ypos,       1.0, 1.0 },
+
+			{ xpos,     ypos + h,   0.0, 0.0 },
+			{ xpos + w, ypos,       1.0, 1.0 },
+			{ xpos + w, ypos + h,   1.0, 0.0 }
+		};
+
+		glBindTexture(GL_TEXTURE_2D, ch.TextureID);
+		glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
+		
+		void* memP = glMapBufferRange(GL_ARRAY_BUFFER, 0, sizeof(vertices), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+		memcpy(memP, vertices, sizeof(vertices));
+		glUnmapBuffer(GL_ARRAY_BUFFER);
+
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+		x += (ch.Advance >> 6) * scale;
+	}
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+	glDisable(GL_BLEND);
+}
+
+void CGRenderText::prepareGLObject()
+{
+	glGenVertexArrays(1, &m_VAO);
+	glGenBuffers(1, &m_VBO);
+
+	glBindVertexArray(m_VAO);
+	glEnableVertexAttribArray(0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
+	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), 0);
+
+	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
 }
 
 bool checkCompileErrors(GLuint shader, std::string type)

@@ -9,12 +9,10 @@
 
 #include <iostream>
 #include <string>
-#include <map>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <ft2build.h>
-#include FT_FREETYPE_H
+
 
 #include "chMath.hpp"
 #include "chGL.hpp"
@@ -27,35 +25,37 @@
 
 bool CRTMemorySet();
 bool UnitTest();
-bool initFreeType();
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+void sizeCallback(GLFWwindow* window, int width, int height);
 
 GLFWwindow* gWindow;
+int SCR_WIDTH = 800;
+int SCR_HEIGHT = 600;
 Chan::ChTransform triTransform;
 Chan::ChTransform quadTransform;
 int main()
 {
 	assert(CRTMemorySet());
 	assert(UnitTest());
-	int* a = new int[5];
+	
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	gWindow = glfwCreateWindow(800, 600, "GJK Prac", NULL, NULL);
+	gWindow = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "GJK Prac", NULL, NULL);
 	glfwMakeContextCurrent(gWindow);
 
 	gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
 	glfwSetKeyCallback(gWindow, keyCallback);
+	glfwSetFramebufferSizeCallback(gWindow, sizeCallback);
 	glfwSwapInterval(0);
-
-	assert(initFreeType());
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 
 	CGRenderLine lR;
 	CGRenderPoint pR;
+	CGRenderText tR(SCR_WIDTH, SCR_HEIGHT);
 
 	Chan::ChVector2 tris[3] =
 	{
@@ -84,8 +84,27 @@ int main()
 	quadTransform.p = Chan::ChVector2(3, 3);
 	quadTransform.R = Chan::ChMat22(Chan::Radians(0.0f));
 
+	int fpsCounter = 0;
+	double currentTime = 0;
+	double lastTime = 0;
+	double fpsTime = 0;
+
+	int FPS = 0;
 	while (!glfwWindowShouldClose(gWindow))
 	{
+		++fpsCounter;
+		lastTime = currentTime;
+		currentTime = glfwGetTime();
+		double deltaTime = currentTime - lastTime;
+		fpsTime += deltaTime;
+		if (fpsTime >= 1.0)
+		{
+			FPS = fpsCounter;
+			fpsCounter = 0;
+			fpsTime = 0;
+		}
+
+
 		glfwPollEvents();
 
 		glClearColor(0.2, 0.2, 0.2, 1.0);
@@ -106,6 +125,11 @@ int main()
 		lR.insertLine(Chan::ChVector3(testResult.point1, 0), Chan::ChVector3(testResult.point2, 0), Chan::ChVector3(0.81, 0.4, 0.5));
 		insertPolygon(lR, triangle, triTransform, Chan::ChVector3(0.7, 0.2, 0.4));
 		insertPolygon(lR, quad, quadTransform, Chan::ChVector3(0.1, 0.4, 0.8));
+
+		std::string text("Distg : ");
+		text += std::to_string(testResult.distance);
+		tR.renderText(text, 0, SCR_HEIGHT - 50, 1.0, Chan::ChVector3(1, 0, 0));
+		tR.renderText(std::to_string(FPS), 0, 0, 0.5, Chan::ChVector3(0.4, 0.6, 0.78));
 
 		Chan::ChMat44 proj = Chan::Ortho(-5.f, 5.f, -5.f, 5.f);
 		lR.renderLine(proj, Chan::ChMat44(1.f), 2.f);
@@ -180,6 +204,13 @@ Final:
 	return;
 }
 
+void sizeCallback(GLFWwindow* window, int width, int height)
+{
+	SCR_WIDTH = width;
+	SCR_HEIGHT = height;
+	glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+}
+
 bool UnitTest()
 {
 	std::cout << "Hello World\n";
@@ -207,92 +238,4 @@ bool UnitTest()
 	std::cout << "Test Done\n";
 
 	return vec4 == 16;
-}
-
-struct Character
-{
-	GLuint TextureID;			// ID handle of the glyph texture
-	Chan::ChVector2 Size;		// Size of glyph
-	Chan::ChVector2 Bearing;	// Offset from baseline to left/top of glyph
-	GLuint Advance;				// Offset to advance to next glyph
-};
-std::map<GLchar, Character> Characters;
-
-bool initFreeType()
-{
-	bool fail = true;
-
-	FT_Library ft;
-	if ((fail = FT_Init_FreeType(&ft)))
-	{
-		std::cout << "ERROR::FREETYPE: Could not init FreeType Library" << std::endl;
-		goto Final;
-	}
-
-	FT_Face face;
-	if ((fail = FT_New_Face(ft, "fonts/arial.ttf", 0, &face)))
-	{
-		std::cout << "ERROR::FREETYPE: Failed to load font" << std::endl;
-		goto Final;
-	}
-
-	FT_Set_Pixel_Sizes(face, 0, 48);
-
-	if ((fail = FT_Load_Char(face, 'X', FT_LOAD_RENDER)))
-	{
-		std::cout << "ERROR::FREETYTPE: Failed to load Glyph" << std::endl;
-		goto Final;
-	}
-	
-
-	// Disable byte-alignment restriction
-	// 이후의 glReadPixels의 연산 뿐만 아니라, 텍스쳐 패턴의 unpacking에
-	// 영향을 미치는 pixel storage mode를 설정한다.
-	// 10개 중 4개의 storage parameters는 pixel data가 client memory에
-	// 어떻게 반환되는지 영향을 미친다.
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
-	for (GLubyte c = 0; c < 128; ++c)
-	{
-		// Load character glyph
-		if (FT_Load_Char(face, c, FT_LOAD_RENDER))
-		{
-			std::cout << "ERROR::FREETYTPE: Failed to load Glyph" << std::endl;
-			goto Final;
-		}
-
-		// Generate Texeture
-		GLuint texture;
-		glGenTextures(1, &texture);
-		glBindTexture(GL_TEXTURE_2D, texture);
-		glTexImage2D(GL_TEXTURE_2D,
-			0,
-			GL_RED,
-			face->glyph->bitmap.width,
-			face->glyph->bitmap.rows,
-			0,
-			GL_RED,
-			GL_UNSIGNED_BYTE,
-			face->glyph->bitmap.buffer);
-
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-		Character character =
-		{
-			texture,
-			Chan::ChVector2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
-			Chan::ChVector2(face->glyph->bitmap_left, face->glyph->bitmap_top),
-			face->glyph->advance.x
-		};
-		Characters.insert(std::pair<GLchar, Character>(c, character));
-	}
-Final:
-	if (fail) return false;
-	else return true;
-
-	FT_Done_Face(face);
-	FT_Done_FreeType(ft);
 }

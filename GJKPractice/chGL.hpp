@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <string>
+#include <map>
 
 #include <glad/glad.h>
 
@@ -31,8 +32,8 @@ private:
 
 	unsigned m_count;
 
-	unsigned m_VAO;
-	unsigned m_VBO[2];
+	GLuint m_VAO;
+	GLuint m_VBO[2];
 
 	GLuint m_program;
 	GLuint m_ProjViewLoc;
@@ -57,11 +58,44 @@ private:
 
 	unsigned m_count;
 
-	unsigned m_VAO;
-	unsigned m_VBO[3];
+	GLuint m_VAO;
+	GLuint m_VBO[3];
 
 	GLuint m_program;
 	GLuint m_ProjViewLoc;
+
+	void prepareGLObject();
+};
+
+class CGRenderText
+{
+public:
+	CGRenderText() = delete;
+	CGRenderText(int& Screen_Width, int& Screen_Height);
+	~CGRenderText();
+
+	void renderText(const std::string& text, Chan::ChReal x, Chan::ChReal y, Chan::ChReal scale, const Chan::ChVector3& color);
+
+private:
+	int& m_scrWidth;
+	int& m_scrHeight;
+
+	GLuint m_VAO;
+	GLuint m_VBO;
+
+	GLuint m_program;
+	GLuint m_projLoc;
+	GLuint m_textSamplerLoc;
+	GLuint m_textColorLoc;
+	
+	struct Character
+	{
+		GLuint TextureID;			// ID handle of the glyph texture
+		Chan::ChVector2 Size;		// Size of glyph
+		Chan::ChVector2 Bearing;	// Offset from baseline to left/top of glyph
+		GLuint Advance;				// Offset to advance to next glyph
+	};
+	std::map<GLchar, Character> m_characters;
 
 	void prepareGLObject();
 };
