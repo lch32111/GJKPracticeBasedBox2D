@@ -315,7 +315,7 @@ u == u2;
 float ABLength = Length(A - B);
 float ABSqLength = SquaredLength(A - B);
 float uNumerator = dot(G - A, n) * ABLength == dot(G - A, A - B);
-float uDenomiantor = Length(B - A) * ABLength = SquaredLength(A - B);
+float uDenomiantor = Length(B - A) * ABLength == SquaredLength(A - B);
 
 if you know the property of fractional numbers, you will know that you can make the same number with multiplying or dividing something onto the denominator and the numerator.
 ```
@@ -326,6 +326,91 @@ I think the thing is clear now.
 
 ## Closest point on triangle
 
+Also refer to the Erin's GDC presentation pdf to understand what I write here. I just rewrite what's on the PDF for just studying it again. You must see the figures of this part on the pdf. Because the directions of triangle, line-segments are important to understand why the equation and the code are like that.
+
+
+
+Assume we have a triangle, which consists of 3 vertices, **ABC**. the triangle is counter-clockwise. The closest features of a triangle are :
+
+* Vertex **A**, **B**, **C**
+* Edge **AB**, **BC**, **CA**
+* Interior of the triangle
+
+So, the voronoi regions of a trianle are :
+
+* Region **A**, **B**, **C**
+* Region **AB**, **BC**, **CA**
+* Region **ABC**
+
+We gonna handle with the vertex regions. Even though dealing with the vertex regions, we need edges weights. And we should notice the directions of each line segment.  :
+
+```c++
+EdgeAB -> u_AB, v_AB -> vA + uB
+EdgeBC -> u_BC, v_BC -> uB + vC
+EdgeCA -> u_CA, v_CA -> uC + vA
+
+Region A : v_AB <= 0 && u_CA <= 0
+Region B : u_AB <= 0 && v_BC <= 0
+Region C : u_BC <= 0 && v_CA <= 0
+```
+
+You should align with the figure on the part of closest point on line segment with this triangle part. Because the directions of each edge are different, You should know which weights Each vertex use. If you recognize this one, the triangle part is the easy one.
+
+After realizing the Vertex Region, we should enter the edge and interior region of a triangle. To do this, we should know The **Triangle Barycentric Coordinates**. Because I just want to intensify what's in my mind about the coordinate, I will use the geometric explanation of Triangle Barycentric Coorindate
+
+Imagine that there is a query point **Q** in the interior of a triangle **ABC**. You can inscribe three triangles by connecting each vertex of the triangle to the query point **Q**. After doing that, you can get next equations :
+
+```c++
+Area(ABQ) + Area(BCQ) + Area(CAQ) = Area(ABC)
+Area(ABQ) / Area(ABC) + Area(BCQ) / Area(ABC) + ARea(CAQ)/ Area(ABC) = 1
+
+// Change the order for making equation uA + vB + wC =1.
+Area(BCQ) / Area(ABC) + ARea(CAQ)/ Area(ABC) + Area(ABQ) / Area(ABC) = 1
+
+// You must see the figure on page 45
+Area(BCQ) ~ u -> related to vertex A
+Area(CAQ) ~ v -> related to vertex B
+Area(ABQ) ~ w -> related to vertex C
+
+u = Area(QBC) / Area(ABC)
+v = Area(QCA) / Area(ABC)
+w = Area(QAB) / Area(ABC)
+u + v + w = 1
+
+what if u = 1, v = 0, w = 0? The query point will be vertex A. Therefore,
+u = 1, v = 0, w = 0 -> vertex A
+u = 0, v = 1, w = 0 -> vertex B
+u = 0, v = 0, w = 1 -> vertex C
+
+It implies that
+uA + vB + wC = Q
+
+and It implies on the geometry field that
+Line Sement : Fractional Length
+Triangles : Fractional Area
+Tetrahedrons : Fractional Volume
+
+Singed Area of Triangle ABC (Counter-ClockWise!!, Winding is important for the sign of Area)
+signedArea = 1/2 * Cross(B - A, C - B).
+    
+what if u or v or w is negative?
+it means the query point Q is behind edgeBC if u < 0
+it means the query point Q is behind edgeCA if v < 0
+it means the query point Q is behind edgeAB if w < 0
+```
+
+Now that we know the triangle barycentric coordinate, we can recognize the edge and interior region of the triangle. 
+
+```c++
+Region AB : u_AB > 0 && v_AB > 0 && wABC <= 0
+Region BC : u_BC > 0 && v_BC > 0 && uABC <= 0
+Region CA : u_CA > 0 && v_CA > 0 && vABC <= 0
+    
+Region ABC : uABC > 0 && vABC > 0 && wABC > 0
+```
+
+We know how to calculate the barycentric coordinate of edges and the triangle and how to evaluate the voronoi region from Query point Q. So, We have to determine the closest  point **P** from the evaluated barycentric coordinates and the evaluated voronoi region.
+
 
 
 
@@ -335,8 +420,7 @@ I think the thing is clear now.
 
 ## TODO
 2. Explain Closest point on triangle from solvin the problem to getting a witness point
-	- Utilize 1.
-	- Voronoi Region on Triangle
+	- Closest point on triangle
 	- Getting a witness point
 	- Fix Sample code
 3. Explain the structure of the loop on Distance2D() function
