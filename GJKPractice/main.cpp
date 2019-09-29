@@ -27,10 +27,16 @@ bool CRTMemorySet();
 bool UnitTest();
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void sizeCallback(GLFWwindow* window, int width, int height);
+void scrollCallback(GLFWwindow* window, double dx, double dy);
 
 GLFWwindow* gWindow;
 int SCR_WIDTH = 800;
 int SCR_HEIGHT = 600;
+
+Chan::ChReal C_ZOOM = 1.0;
+Chan::ChVector2 C_CENTER = Chan::ChVector2(0, 0);
+Chan::ChReal C_DIMENSION = 5.0;
+
 Chan::ChTransform triTransform;
 Chan::ChTransform quadTransform;
 int main()
@@ -48,14 +54,11 @@ int main()
 
 	glfwSetKeyCallback(gWindow, keyCallback);
 	glfwSetFramebufferSizeCallback(gWindow, sizeCallback);
+	glfwSetScrollCallback(gWindow, scrollCallback);
 	glfwSwapInterval(0);
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
-
-	CGRenderLine lR;
-	CGRenderPoint pR;
-	CGRenderText tR(SCR_WIDTH, SCR_HEIGHT);
 
 	Chan::ChVector2 tris[3] =
 	{
@@ -84,56 +87,72 @@ int main()
 	quadTransform.p = Chan::ChVector2(3, 3);
 	quadTransform.R = Chan::ChMat22(Chan::Radians(0.0f));
 
+	CGRenderLine lR;
+	CGRenderPoint pR;
+	CGRenderText tR(SCR_WIDTH, SCR_HEIGHT);
+
 	int fpsCounter = 0;
 	double currentTime = 0;
 	double lastTime = 0;
 	double fpsTime = 0;
-
 	int FPS = 0;
+
 	while (!glfwWindowShouldClose(gWindow))
 	{
-		++fpsCounter;
-		lastTime = currentTime;
-		currentTime = glfwGetTime();
-		double deltaTime = currentTime - lastTime;
-		fpsTime += deltaTime;
-		if (fpsTime >= 1.0)
+		// Calculate FPS
 		{
-			FPS = fpsCounter;
-			fpsCounter = 0;
-			fpsTime = 0;
+			++fpsCounter;
+			lastTime = currentTime;
+			currentTime = glfwGetTime();
+			double deltaTime = currentTime - lastTime;
+			fpsTime += deltaTime;
+			if (fpsTime >= 1.0)
+			{
+				FPS = fpsCounter;
+				fpsCounter = 0;
+				fpsTime = 0;
+			}
 		}
-
 
 		glfwPollEvents();
 
 		glClearColor(0.2, 0.2, 0.2, 1.0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		Chan::Input firstTest;
-		firstTest.polygon1 = triangle;
-		firstTest.polygon2 = quad;
-		firstTest.transform1 = triTransform;
-		firstTest.transform2 = quadTransform;
+		// GJK Algorithm
+		Chan::Input InputTest;
+		Chan::Output OutputTest;
+		{
+			InputTest.polygon1 = triangle;
+			InputTest.polygon2 = quad;
+			InputTest.transform1 = triTransform;
+			InputTest.transform2 = quadTransform;
+			Chan::Distance2D(&OutputTest, InputTest);
+		}
+		
+		// Insert Output Primitives
+		{
+			pR.insertPoint(Chan::ChVector3(OutputTest.point1, 0), Chan::ChVector3(1, 0, 0), 10.f);
+			pR.insertPoint(Chan::ChVector3(OutputTest.point2, 0), Chan::ChVector3(0, 1, 0), 10.f);
+			lR.insertLine(Chan::ChVector3(OutputTest.point1, 0), Chan::ChVector3(OutputTest.point2, 0), Chan::ChVector3(0.81, 0.4, 0.5));
+			insertPolygon(lR, triangle, triTransform, Chan::ChVector3(0.7, 0.2, 0.4));
+			insertPolygon(lR, quad, quadTransform, Chan::ChVector3(0.1, 0.4, 0.8));
+		}
+		
+		// Render
+		{
+			Chan::ChReal ratio = (Chan::ChReal)SCR_WIDTH / (Chan::ChReal)SCR_HEIGHT;
+			Chan::ChVector2 extents(ratio * C_DIMENSION * C_ZOOM, C_DIMENSION * C_ZOOM);
+			Chan::ChVector2 lower = C_CENTER - extents;
+			Chan::ChVector2 upper = C_CENTER + extents;
+			Chan::ChMat44 proj = Chan::Ortho(lower.x, upper.x, lower.y, upper.y);
 
-		Chan::Output testResult;
+			lR.renderLine(proj, Chan::ChMat44(1.f), 2.f);
+			pR.renderPoint(proj, Chan::ChMat44(1.f));
 
-		Chan::Distance2D(&testResult, firstTest);
-
-		pR.insertPoint(Chan::ChVector3(testResult.point1, 0), Chan::ChVector3(1, 0, 0), 10.f);
-		pR.insertPoint(Chan::ChVector3(testResult.point2, 0), Chan::ChVector3(0, 1, 0), 10.f);
-		lR.insertLine(Chan::ChVector3(testResult.point1, 0), Chan::ChVector3(testResult.point2, 0), Chan::ChVector3(0.81, 0.4, 0.5));
-		insertPolygon(lR, triangle, triTransform, Chan::ChVector3(0.7, 0.2, 0.4));
-		insertPolygon(lR, quad, quadTransform, Chan::ChVector3(0.1, 0.4, 0.8));
-
-		std::string text("Distg : ");
-		text += std::to_string(testResult.distance);
-		tR.renderText(text, 0, SCR_HEIGHT - 50, 1.0, Chan::ChVector3(1, 0, 0));
-		tR.renderText(std::to_string(FPS), 0, 0, 0.5, Chan::ChVector3(0.4, 0.6, 0.78));
-
-		Chan::ChMat44 proj = Chan::Ortho(-5.f, 5.f, -5.f, 5.f);
-		lR.renderLine(proj, Chan::ChMat44(1.f), 2.f);
-		pR.renderPoint(proj, Chan::ChMat44(1.f));
+			tR.renderText("Dist : " + std::to_string(OutputTest.distance), 0, SCR_HEIGHT - 20, 0.5, Chan::ChVector3(1, 0, 0));
+			tR.renderText("FPS : " + std::to_string(FPS), 0, 0, 0.5, Chan::ChVector3(0.4, 0.6, 0.78));
+		}
 
 		glfwSwapBuffers(gWindow);
 	}
@@ -156,6 +175,7 @@ bool CRTMemorySet()
 }
 
 static bool Key1Pressed = false;
+static Chan::ChReal moveVel = 0.2;
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
 	static bool what = false;
@@ -175,16 +195,16 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 			goto Final;
 		}
 		case GLFW_KEY_W:
-			object->p += Chan::ChVector2(0, 0.05);
+			object->p += Chan::ChVector2(0, moveVel);
 			goto Final;
 		case GLFW_KEY_A:
-			object->p += Chan::ChVector2(-0.05, 0.0);
+			object->p += Chan::ChVector2(-moveVel, 0.0);
 			goto Final;
 		case GLFW_KEY_S:
-			object->p += Chan::ChVector2(0.0 , -0.05);
+			object->p += Chan::ChVector2(0.0 , -moveVel);
 			goto Final;
 		case GLFW_KEY_D:
-			object->p += Chan::ChVector2(0.05, 0.0);
+			object->p += Chan::ChVector2(moveVel, 0.0);
 			goto Final;
 
 		case GLFW_KEY_R:
@@ -206,9 +226,14 @@ Final:
 
 void sizeCallback(GLFWwindow* window, int width, int height)
 {
-	SCR_WIDTH = width;
-	SCR_HEIGHT = height;
+	SCR_WIDTH = width, SCR_HEIGHT = height;
 	glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+}
+
+void scrollCallback(GLFWwindow* window, double dx, double dy)
+{
+	if (dy > 0) C_ZOOM /= 1.1f;
+	else C_ZOOM *= 1.1f;
 }
 
 bool UnitTest()
