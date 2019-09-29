@@ -17,7 +17,7 @@ This summary is based on Erin Catto GDC Presentation. This explanation is only f
 
 
 
-### Analyzing the GetSearchDirection() code
+## Analyzing the GetSearchDirection() code
 
 ```c++
 Chan::ChVector2 Chan::Simplex::GetSearchDirection() const
@@ -160,8 +160,180 @@ Now, I hope someone who read this will get to know why the equations and the cod
 So the first one is clear.
 
 
+
+## Closest point on line segment
+
+Refer to the Erin's GDC presentation pdf to understand what I write here. I just rewrite what's on the PDF for just studying it again.
+
+
+
+Assume that we have a line segment, which consists of Point **A**, and **B**. and There is an Query Point **Q**. Our goal is to calculate the closest point **P** on the line segment with Query point **Q**.
+
+
+
+By projecting **Q** onto the line segment **AB**, we can have 3 Voronoi regions : 
+
+* region **A** : **Q** == **A**
+* region **AB** : **Q** == interior of **AB**
+* region **B** : **Q** == **B**
+
+
+
+We use barycentric coordinates for computing the projection of Q onto the line passing through segment AB. In line segment, Any point **G** on line passing through **AB** can be represetned as a `weighted sum of A and B`. the weights are u, v, and must sum up to one. We can view the barycentric coordinates as the fractional lengths of partial segments.
+
+```
+G(u, v) = uA + vB;
+u + v = 1;
+n = Normalize(B - A);
+
+// (u, v) from G
+v = dot(G - A, n) / Length(B - A);
+u = dot(B - G, n) / Length(B - A);
+
+// (u, v) from Q
+v = dot(Q - A, n) / Length(B - A);
+u = dot(B - Q, n) / Length(B - A);
+
+// Voronoi region from (u, v)
+if(u > 0 && v >0) return regionAB;
+if(v <= 0) return regionA;
+if(u <= 0) return regionB;
+```
+
+
+
+It's time to understand the actual code.
+
+```c++
+void Chan::Simplex::Solve2(const ChVector2 & Q)
+{
+	ChVector2 A = m_vertexA.point;
+	ChVector2 B = m_vertexB.point;
+
+	// Compute barycentric coordinates (pre-division).
+	ChReal u = dot(Q - B, A - B);
+	ChReal v = dot(Q - A, B - A);
+
+	// Region A
+	if (v <= ChReal(0.0))
+	{
+		// Simplex is reduced to just vertex A
+		m_vertexA.u = ChReal(1.0);
+		m_divisor = ChReal(1.0);
+		m_count = 1;
+		return;
+	}
+
+	// Region B
+	if (u <= ChReal(0.0))
+	{
+		// Simplex is reduced to just vertex B
+		// WEmove vertexB into vertx A and reduce the count.
+		m_vertexA = m_vertexB;
+		m_vertexA.u = ChReal(1.0);
+		m_divisor = ChReal(1.0);
+		m_count = 1;
+		return;
+	}
+
+	// Region AB. Due to the conditions above, we are
+	// guaranteed that the edge has non-zero length and division
+	// is safe
+	m_vertexA.u = u;
+	m_vertexB.u = v;
+	ChVector2 e = B - A;
+	m_divisor = dot(e, e);
+	m_count = 2;
+}
+
+Chan::ChVector2 Chan::Simplex::GetClosestPoint() const
+{
+	switch (m_count)
+	{
+	...
+	case 2:
+	{
+		ChReal s = static_cast<ChReal>(1.0) / m_divisor;
+		return (s * m_vertexA.u) * m_vertexA.point + (s * m_vertexB.u) * m_vertexB.point;
+	}
+    ...
+	}
+}
+```
+
+First, We have to notice that the equation of calculating the weights (u, v) is different from the explanation. However, we can figure out why it is like. Remember the equation of calculating (u, v) again :
+
+```c++
+// (u, v) from G (Query Point)
+v = dot(G - A, n) / Length(B - A);
+u = dot(B - G, n) / Length(B - A);
+```
+
+As you already know, the solve function is based on GJK algorithm. so the Query point is always the origin (0, 0). and the code of getting the weights is :
+
+```c++
+ChVector2 A = m_vertexA.point;
+ChVector2 B = m_vertexB.point;
+
+// Compute barycentric coordinates (pre-division).
+ChReal u_0 = dot(B - Q, B - A)
+ChReal u_1 = -dot(Q - B, B - A);
+ChReal u_2 = dot(Q - B, A - B);
+ChReal u = dot(Q - B, A - B);
+ChReal v = dot(Q - A, B - A);
+```
+
+the process from u_o to u_2 shows why the code is like. But there is still a difference that the code doesn't have the code to divide the weights by the length of (B - A). Howevver, If you see other codes to get the closest point : 
+
+```c++
+m_vertexA.u = u;
+m_vertexB.u = v;
+ChVector2 e = B - A;
+m_divisor = dot(e, e);
+m_count = 2;
+...
+...
+ChReal s = static_cast<ChReal>(1.0) / m_divisor;
+		return (s * m_vertexA.u) * m_vertexA.point + (s * m_vertexB.u) * m_vertexB.point;
+
+(s * m_vertexA.u) == InverseSquaredLength(A - B) * dot(Q - B, A - B)
+--> dot(Q - B, A - B) / SquaredLength(A - B) == dot(Q - B, normalize(A - B)) / Length(A - B)
+```
+
+I'm sure that the code above does not explain well why it's same as the original explanation. But, I want to try to explain one more.
+
+```c++
+// (u, v) from G (Query Point)
+n = normalize(B - A);
+v = dot(G - A, n) / Length(B - A);
+u = dot(B - G, n) / Length(B - A);
+
+u2 = dot(G - B, A - B) / SquaredLength(A - B);
+
+u == u2;
+
+float ABLength = Length(A - B);
+float ABSqLength = SquaredLength(A - B);
+float uNumerator = dot(G - A, n) * ABLength == dot(G - A, A - B);
+float uDenomiantor = Length(B - A) * ABLength = SquaredLength(A - B);
+
+if you know the property of fractional numbers, you will know that you can make the same number with multiplying or dividing something onto the denominator and the numerator.
+```
+
+I think the thing is clear now. 
+
+
+
+## Closest point on triangle
+
+
+
+
+
+
+
+
 ## TODO
-1. Explain Closest point on line segment from solving the problem to getting a witness point
 2. Explain Closest point on triangle from solvin the problem to getting a witness point
 	- Utilize 1.
 	- Voronoi Region on Triangle
