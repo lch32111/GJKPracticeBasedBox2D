@@ -432,7 +432,22 @@ void Chan::Simplex::Solve3(const ChVector2 & Q)
     // And the Barycentric coordinates are evaluted with (Q - A), (B - Q).
     // the coordinate u is on the B side, v on the A side.
     // However, In this case, the triangle is in counter-clockwise.
+    // That means you have to reverse all of the directions.
     
+    // Remeber the explanation above again
+    /*
+    EdgeAB -> u_AB, v_AB -> vA + uB
+	EdgeBC -> u_BC, v_BC -> uB + vC
+	EdgeCA -> u_CA, v_CA -> uC + vA
+
+	Region A : v_AB <= 0 && u_CA <= 0
+	Region B : u_AB <= 0 && v_BC <= 0
+	Region C : u_BC <= 0 && v_CA <= 0
+    */
+    // So That's the reason why the equation below is like that.
+    // You have to use Point B for caclulating the barycentric coordinate u.
+    // If you understand this, the three 'if' conditions are clear.
+    // Let's jump to the Edge Case
 	ChReal uAB = dot(Q - B, A - B);
 	ChReal vAB = dot(Q - A, B - A);
 
@@ -472,9 +487,35 @@ void Chan::Simplex::Solve3(const ChVector2 & Q)
 	}
 
 	// Compute signed triangle area.
+    // I already explained how to calculate the area of the triangle
+    // by doing the cross product.
+    // But there is no divide with 0.5 to calculate the exact area.
+    // The reason is that You don't need the exact area 
+    // for getting voronoi resion and bary centric coordinates
+    // Because You can tell what region the query point belongs to
+    // by making use of the sign of barycentric coordinates.
+    // And Even though you need to calculate the closest point,
+    // You can get the point due to the ratio. 
 	ChReal area = Cross(B - A, C - A);
 
 	// Compute triangle barycentric coordinates (pre-division).
+    // I already explained the way to evaluate the barycentric coordinates
+    // of a triangle. But the equation below is different what I described.
+    // Actually, You should divide the inscribed area 
+    // with the original triangle area.
+    // But you don't meed to. As I already mentioned, 
+    // You can tell what region the query point belongs to by distinguishing
+    // the sing of the barycentric coordinates.
+    // Remember this equation for gettting voronoi region
+    /*
+    Region AB : u_AB > 0 && v_AB > 0 && wABC <= 0
+    Region BC : u_BC > 0 && v_BC > 0 && uABC <= 0
+    Region CA : u_CA > 0 && v_CA > 0 && vABC <= 0
+
+    Region ABC : uABC > 0 && vABC > 0 && wABC > 0
+    */
+    // I hope you will understand this.
+    // Let's jump to the interior case.
 	ChReal uABC = area * Cross(B - Q, C - Q);
 	ChReal vABC = area * Cross(C - Q, A - Q);
 	ChReal wABC = area * Cross(A - Q, B - Q);
@@ -519,8 +560,13 @@ void Chan::Simplex::Solve3(const ChVector2 & Q)
 
 	// Region ABC
 	// The triangle area is guaranteed to be non-zero.
+    // If all the other cases pass, the barycentric coordinates of the triangle
+    // must be more than zero.
 	assert(uABC > ChReal(0.0) && vABC > ChReal(0.0) && wABC > ChReal(0.0));
 
+    // And You should know why i put the divisor 
+    // as the sum of all of the barycentric coordinates.
+    // I will explain it below.
 	m_vertexA.u = uABC;
 	m_vertexB.u = vABC;
 	m_vertexC.u = wABC;
@@ -529,16 +575,70 @@ void Chan::Simplex::Solve3(const ChVector2 & Q)
 }
 ```
 
+To evaluate the  closest point on the triangle, You should know this equation again.
 
+`Q = uA + vB + wC`
+
+And the actual code is :
+
+```c++
+void Chan::Simplex::GetWitnessPoints(ChVector2 * point1, ChVector2 * point2) const
+{
+	switch (m_count)
+	{
+	case 1:
+	...
+	case 2:
+	...
+	case 3:
+	{
+		ChReal s = ChReal(1.0) / m_divisor;
+		*point1 = (s * m_vertexA.u) * m_vertexA.point1 
+			+ (s * m_vertexB.u) * m_vertexB.point1
+			+ (s * m_vertexC.u) * m_vertexC.point1;
+		*point2 = *point1;
+		break;
+    }
+	default:
+		assert(false);
+		break;
+	}
+}
+```
+
+According to the code, if we see the 'u' part, the actual equation is
+
+```
+s == (1.0) / (uABC + vABC + wABC)
+s * m_vertexA.u == (uABC) / (uABC + vABC + wABC)
+
+So the equation of evaluating the closest point on triangle is
+P = uA + vB + wC;
+the u part is now (uABC) / (uABC + vABC + wABC)
+
+uABC + vABC + wABC == (TriangleArea * 2) * 
+					  ((Area(QBC) + Area(QCA)+ Area(QAB)) * 2)
+				   == (TriangleArea * 2) * (TriangleArea * 2)
+				   == TriangleArea^2 * 4
+uABC == (TriangleArea * 2) * Area(QBC) * 2
+     == TriangleArea * Area(QBC) * 4
+     
+Therefore,
+s * m_vertexA.u == (TriangleArea * Area(QBC) * 4) /
+					(TriangleArea^2 * 4)
+				== Area(QBC) / TriangleArea
+```
+
+I hope it's clear to evaluate the closest point on triangle now.
+
+
+
+I clear the hardest one!
 
 
 
 
 ## TODO
-2. Explain Closest point on triangle from solvin the problem to getting a witness point
-	- Closest point on triangle
-	- Getting a witness point
-	- Fix Sample code
 3. Explain the structure of the loop on Distance2D() function
 	- structure
 	- terminate condition

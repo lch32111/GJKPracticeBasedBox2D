@@ -70,8 +70,6 @@ Chan::ChVector2 Chan::Simplex::GetClosestPoint() const
 
 void Chan::Simplex::GetWitnessPoints(ChVector2 * point1, ChVector2 * point2) const
 {
-	ChReal factor = ChReal(1.0) / m_divisor;
-
 	switch (m_count)
 	{
 	case 1:
