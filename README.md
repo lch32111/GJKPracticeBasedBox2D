@@ -411,7 +411,123 @@ Region ABC : uABC > 0 && vABC > 0 && wABC > 0
 
 We know how to calculate the barycentric coordinate of edges and the triangle and how to evaluate the voronoi region from Query point Q. So, We have to determine the closest  point **P** from the evaluated barycentric coordinates and the evaluated voronoi region.
 
+It's time to analyze the actual code. the code is a little different from the Erin's Sample code. When i just use the sample code, i got the assert which uABC, vABC, wABC is not more than 0 when the query point is inside a triangle. Anyway, The code below works well now. So, I will explain it based on my code. You can check the comment in the code below.
 
+```c++
+// Closest point on triangle to Q.
+// Voronoi regions : A, B, C, AB, BC, CA, ABC
+void Chan::Simplex::Solve3(const ChVector2 & Q)
+{
+    // Triangle in Counter-ClockWise 
+    // You should ensure the direction of triangle vertices
+	ChVector2 A = m_vertexA.point;
+	ChVector2 B = m_vertexB.point;
+	ChVector2 C = m_vertexC.point;
+
+	// Compute edge barycentric coordinates (pre-division).
+    // You should take care of the direction of vectors
+    // As you already know with the previous explanation on closest point on line-segment,
+    // The A is on the left side, B on the right side.
+    // The line-segment is A->B, which is evaluated with (B - A)
+    // And the Barycentric coordinates are evaluted with (Q - A), (B - Q).
+    // the coordinate u is on the B side, v on the A side.
+    // However, In this case, the triangle is in counter-clockwise.
+    
+	ChReal uAB = dot(Q - B, A - B);
+	ChReal vAB = dot(Q - A, B - A);
+
+	ChReal uBC = dot(Q - C, B - C);
+	ChReal vBC = dot(Q - B, C - B);
+
+	ChReal uCA = dot(Q - A, C - A);
+	ChReal vCA = dot(Q - C, A - C);
+
+	// Region A
+	if (vAB <= ChReal(0.0) && uCA <= ChReal(0.0))
+	{
+		m_vertexA.u = ChReal(1.0);
+		m_divisor = 1.f;
+		m_count = 1;
+		return;
+	}
+
+	// Region B
+	if (uAB <= ChReal(0.0) && vBC <= ChReal(0.0))
+	{
+		m_vertexA = m_vertexB;
+		m_vertexA.u = ChReal(1.0);
+		m_divisor = 1.f;
+		m_count = 1;
+		return;
+	}
+
+	// Region C
+	if (uBC <= ChReal(0.0) && vCA <= ChReal(0.0))
+	{
+		m_vertexA = m_vertexC;
+		m_vertexA.u = ChReal(1.0);
+		m_divisor = 1.f;
+		m_count = 1;
+		return;
+	}
+
+	// Compute signed triangle area.
+	ChReal area = Cross(B - A, C - A);
+
+	// Compute triangle barycentric coordinates (pre-division).
+	ChReal uABC = area * Cross(B - Q, C - Q);
+	ChReal vABC = area * Cross(C - Q, A - Q);
+	ChReal wABC = area * Cross(A - Q, B - Q);
+
+	// Region AB
+	if (uAB > ChReal(0.0) && vAB > ChReal(0.0) && wABC <= ChReal(0.0))
+	{
+		m_vertexA.u = uAB;
+		m_vertexB.u = vAB;
+		ChVector2 e = B - A;
+		m_divisor = dot(e, e);
+		m_count = 2;
+		return;
+	}
+
+	// Region BC
+	if (uBC > ChReal(0.0) && vBC > ChReal(0.0) && uABC <= ChReal(0.0))
+	{
+		m_vertexA = m_vertexB;
+		m_vertexB = m_vertexC;
+		m_vertexA.u = uBC;
+		m_vertexB.u = vBC;
+		ChVector2 e = C - B;
+		m_divisor = dot(e, e);
+		m_count = 2;
+		return;
+	}
+
+	// Region CA
+	if (uCA > ChReal(0.0) && vCA > ChReal(0.0) && vABC <= ChReal(0.0))
+	{
+		m_vertexB = m_vertexA;
+		m_vertexA = m_vertexC;
+
+		m_vertexA.u = uCA;
+		m_vertexB.u = vCA;
+		ChVector2 e = A - C;
+		m_divisor = dot(e, e);
+		m_count = 2;
+		return;
+	}
+
+	// Region ABC
+	// The triangle area is guaranteed to be non-zero.
+	assert(uABC > ChReal(0.0) && vABC > ChReal(0.0) && wABC > ChReal(0.0));
+
+	m_vertexA.u = uABC;
+	m_vertexB.u = vABC;
+	m_vertexC.u = wABC;
+	m_divisor = uABC + vABC + wABC;
+	m_count = 3;
+}
+```
 
 
 
