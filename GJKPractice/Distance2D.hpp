@@ -29,18 +29,14 @@ namespace Chan
 		int index2;			// point 2 index
 	};
 
-	/// Simplex used by the GJK algorithm
-	struct Simplex
+	/// Used to warm start b2Distance.
+	/// Set count to zero on first call.
+	struct SimplexCache
 	{
-		ChVector2 GetSearchDirection() const;
-		ChVector2 GetClosestPoint() const;
-		void GetWitnessPoints(ChVector2* point1, ChVector2* point2) const;
-		void Solve2(const ChVector2& Q);
-		void Solve3(const ChVector2& Q);
-
-		SimplexVertex m_vertexA, m_vertexB, m_vertexC;
-		float m_divisor; // denominator to normalize barycentric coordinates
-		int m_count;
+		ChReal metric;		///< length or area
+		int count;
+		int indexA[3];	///< vertices on shape A
+		int indexB[3];	///< vertices on shape B
 	};
 
 	/// Input for the distance function
@@ -50,6 +46,24 @@ namespace Chan
 		Polygon polygon2;
 		ChTransform transform1;
 		ChTransform transform2;
+	};
+
+	/// Simplex used by the GJK algorithm
+	struct Simplex
+	{
+		void ReadCache(const SimplexCache& cache, const Input& input);
+		void WriteCache(SimplexCache* cache) const;
+
+		ChVector2 GetSearchDirection() const;
+		ChVector2 GetClosestPoint() const;
+		ChReal GetMetric() const;
+		void GetWitnessPoints(ChVector2* point1, ChVector2* point2) const;
+		void Solve2(const ChVector2& Q);
+		void Solve3(const ChVector2& Q);
+
+		SimplexVertex m_vertexA, m_vertexB, m_vertexC;
+		float m_divisor; // denominator to normalize barycentric coordinates
+		int m_count;
 	};
 
 	/// Output for the distance function
@@ -71,6 +85,7 @@ namespace Chan
 
 	/// Get the closest points between two point clouds.
 	void Distance2D(Output* output, const Input& input);
+	void Distance2D(Output* output, SimplexCache* cache,  const Input& input);
 }
 
 #endif

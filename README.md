@@ -700,6 +700,274 @@ To understand this well, You should see the figure on the pdf.
 
 ### 1) GJK Optimization + Enforcement + Caching
 
+I just want to analyze the caching first. The code is
+
+```c++
+struct b2Simplex
+{
+	void ReadCache(	const b2SimplexCache* cache,
+					const b2DistanceProxy* proxyA, const b2Transform& transformA,
+					const b2DistanceProxy* proxyB, const b2Transform& transformB)
+	{
+		b2Assert(cache->count <= 3);
+		
+		// Copy data from cache.
+		m_count = cache->count;
+		b2SimplexVertex* vertices = &m_v1;
+		for (int32 i = 0; i < m_count; ++i)
+		{
+			b2SimplexVertex* v = vertices + i;
+			v->indexA = cache->indexA[i];
+			v->indexB = cache->indexB[i];
+			b2Vec2 wALocal = proxyA->GetVertex(v->indexA);
+			b2Vec2 wBLocal = proxyB->GetVertex(v->indexB);
+			v->wA = b2Mul(transformA, wALocal);
+			v->wB = b2Mul(transformB, wBLocal);
+			v->w = v->wB - v->wA;
+			v->a = 0.0f;
+		}
+
+		// Compute the new simplex metric, if it is substantially different than
+		// old metric then flush the simplex.
+		if (m_count > 1)
+		{
+			float32 metric1 = cache->metric;
+			float32 metric2 = GetMetric();
+			if (metric2 < 0.5f * metric1 || 2.0f * metric1 < metric2 || metric2 < b2_epsilon)
+			{
+				// Reset the simplex.
+				m_count = 0;
+			}
+		}
+
+		// If the cache is empty or invalid ...
+		if (m_count == 0)
+		{
+			b2SimplexVertex* v = vertices + 0;
+			v->indexA = 0;
+			v->indexB = 0;
+			b2Vec2 wALocal = proxyA->GetVertex(0);
+			b2Vec2 wBLocal = proxyB->GetVertex(0);
+			v->wA = b2Mul(transformA, wALocal);
+			v->wB = b2Mul(transformB, wBLocal);
+			v->w = v->wB - v->wA;
+			v->a = 1.0f;
+			m_count = 1;
+		}
+	}
+
+	void WriteCache(b2SimplexCache* cache) const
+	{
+		cache->metric = GetMetric();
+		cache->count = uint16(m_count);
+		const b2SimplexVertex* vertices = &m_v1;
+		for (int32 i = 0; i < m_count; ++i)
+		{
+			cache->indexA[i] = uint8(vertices[i].indexA);
+			cache->indexB[i] = uint8(vertices[i].indexB);
+		}
+	}
+    
+    float32 GetMetric() const
+	{
+		switch (m_count)
+		{
+		case 0:
+			b2Assert(false);
+			return 0.0f;
+
+		case 1:
+			return 0.0f;
+
+		case 2:
+			return b2Distance(m_v1.w, m_v2.w);
+
+		case 3:
+			return b2Cross(m_v2.w - m_v1.w, m_v3.w - m_v1.w);
+
+		default:
+			b2Assert(false);
+			return 0.0f;
+		}
+	}
+
+void b2Distance(b2DistanceOutput* output,
+				b2SimplexCache* cache,
+				const b2DistanceInput* input)
+{
+	++b2_gjkCalls;
+
+	const b2DistanceProxy* proxyA = &input->proxyA;
+	const b2DistanceProxy* proxyB = &input->proxyB;
+
+	b2Transform transformA = input->transformA;
+	b2Transform transformB = input->transformB;
+
+	// Initialize the simplex.
+	b2Simplex simplex;
+	simplex.ReadCache(cache, proxyA, transformA, proxyB, transformB);
+
+	// Get simplex vertices as an array.
+	b2SimplexVertex* vertices = &simplex.m_v1;
+	const int32 k_maxIters = 20;
+
+	// These store the vertices of the last simplex so that we
+	// can check for duplicates and prevent cycling.
+	int32 saveA[3], saveB[3];
+	int32 saveCount = 0;
+
+	// Main iteration loop.
+	int32 iter = 0;
+	while (iter < k_maxIters)
+	{
+		// Copy simplex so we can identify duplicates.
+		saveCount = simplex.m_count;
+		for (int32 i = 0; i < saveCount; ++i)
+		{
+			saveA[i] = vertices[i].indexA;
+			saveB[i] = vertices[i].indexB;
+		}
+
+		switch (simplex.m_count)
+		{
+		case 1:
+			break;
+
+		case 2:
+			simplex.Solve2();
+			break;
+
+		case 3:
+			simplex.Solve3();
+			break;
+
+		default:
+			b2Assert(false);
+		}
+
+		// If we have 3 points, then the origin is in the corresponding triangle.
+		if (simplex.m_count == 3)
+		{
+			break;
+		}
+
+		// Get search direction.
+		b2Vec2 d = simplex.GetSearchDirection();
+
+		// Ensure the search direction is numerically fit.
+		if (d.LengthSquared() < b2_epsilon * b2_epsilon)
+		{
+			// The origin is probably contained by a line segment
+			// or triangle. Thus the shapes are overlapped.
+
+			// We can't return zero here even though there may be overlap.
+			// In case the simplex is a point, segment, or triangle it is difficult
+			// to determine if the origin is contained in the CSO or very close to it.
+			break;
+		}
+
+		// Compute a tentative new simplex vertex using support points.
+		b2SimplexVertex* vertex = vertices + simplex.m_count;
+		vertex->indexA = proxyA->GetSupport(b2MulT(transformA.q, -d));
+		vertex->wA = b2Mul(transformA, proxyA->GetVertex(vertex->indexA));
+		b2Vec2 wBLocal;
+		vertex->indexB = proxyB->GetSupport(b2MulT(transformB.q, d));
+		vertex->wB = b2Mul(transformB, proxyB->GetVertex(vertex->indexB));
+		vertex->w = vertex->wB - vertex->wA;
+
+		// Iteration count is equated to the number of support point calls.
+		++iter;
+		++b2_gjkIters;
+
+		// Check for duplicate support points. This is the main termination criteria.
+		bool duplicate = false;
+		for (int32 i = 0; i < saveCount; ++i)
+		{
+			if (vertex->indexA == saveA[i] && vertex->indexB == saveB[i])
+			{
+				duplicate = true;
+				break;
+			}
+		}
+
+		// If we found a duplicate support point we must exit to avoid cycling.
+		if (duplicate)
+		{
+			break;
+		}
+
+		// New vertex is ok and needed.
+		++simplex.m_count;
+	}
+
+	b2_gjkMaxIters = b2Max(b2_gjkMaxIters, iter);
+
+	// Prepare output.
+	simplex.GetWitnessPoints(&output->pointA, &output->pointB);
+	output->distance = b2Distance(output->pointA, output->pointB);
+	output->iterations = iter;
+
+	// Cache the simplex.
+	simplex.WriteCache(cache);
+
+	// Apply radii if requested.
+	if (input->useRadii)
+	{
+		float32 rA = proxyA->m_radius;
+		float32 rB = proxyB->m_radius;
+
+		if (output->distance > rA + rB && output->distance > b2_epsilon)
+		{
+			// Shapes are still no overlapped.
+			// Move the witness points to the outer surface.
+			output->distance -= rA + rB;
+			b2Vec2 normal = output->pointB - output->pointA;
+			normal.Normalize();
+			output->pointA += rA * normal;
+			output->pointB -= rB * normal;
+		}
+		else
+		{
+			// Shapes are overlapped when radii are considered.
+			// Move the witness points to the middle.
+			b2Vec2 p = 0.5f * (output->pointA + output->pointB);
+			output->pointA = p;
+			output->pointB = p;
+			output->distance = 0.0f;
+		}
+	}
+}
+```
+
+I think Erin makes use of temporal coherence for efficient GJK algorithm. `ReadCache()` function just use **metrics** to check whether the previous cache data is valid or not. The metrics is the length of line segment in 1-simplex, and triangle area * 2 in 2-simplex. The metrics is zero in other cases.
+
+```c++
+// Compute the new simplex metric, if it is substantially different than
+// old metric then flush the simplex.
+if (m_count > 1)
+{
+    float32 metric1 = cache->metric;
+    float32 metric2 = GetMetric();
+    if (metric2 < 0.5f * metric1 || 2.0f * metric1 < metric2 || metric2 < b2_epsilon)
+    {
+        // Reset the simplex.
+        m_count = 0;
+    }
+}
+```
+
+So the invalid condition is
+
+* current metric is smaller than half of the cached mteric
+* current metric is bigger than double of the cached metric.
+* current metric is close to the zero.
+
+
+
+
+
+
+
 
 
 ### 2) GJK Raycast

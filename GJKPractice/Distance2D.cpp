@@ -46,6 +46,62 @@ Chan::ChVector2 Chan::Simplex::GetSearchDirection() const
 	}
 }
 
+void Chan::Simplex::ReadCache(const Chan::SimplexCache& cache, const Chan::Input& input)
+{
+	assert(cache.count <= 3);
+
+	m_count = cache.count;
+	SimplexVertex* vertices = &m_vertexA;
+	for (int i = 0; i < m_count; ++i)
+	{
+		SimplexVertex* v = vertices + i;
+		v->index1 = cache.indexA[i];
+		v->index2 = cache.indexB[i];
+		ChVector2 localPoint1 = input.polygon1.m_points[v->index1];
+		ChVector2 localPoint2 = input.polygon2.m_points[v->index2];
+		v->point1 = Mul(input.transform1, localPoint1);
+		v->point2 = Mul(input.transform2, localPoint2);
+		v->point = v->point2 - v->point1;
+		v->u = static_cast<ChReal>(0.0);
+	}
+
+	if (m_count > 1)
+	{
+		ChReal metric1 = cache.metric;
+		ChReal metric2 = GetMetric();
+		if (metric2 < 0.5f * metric1 || 2.0f * metric1 < metric2 || metric2 < Chreal_epsilon)
+		{
+			m_count = 0;
+		}
+	}
+
+	if (m_count == 0)
+	{
+		SimplexVertex* v = vertices + 0;
+		v->index1 = 0;
+		v->index2 = 0;
+		ChVector2 localPoint1 = input.polygon1.m_points[0];
+		ChVector2 localPoint2 = input.polygon2.m_points[0];
+		v->point1 = Mul(input.transform1, localPoint1);
+		v->point2 = Mul(input.transform2, localPoint2);
+		v->point = v->point2 - v->point1;
+		v->u = static_cast<ChReal>(1.0);
+		m_count = 1;
+	}
+}
+
+void Chan::Simplex::WriteCache(Chan::SimplexCache* cache) const
+{
+	cache->metric = GetMetric();
+	cache->count = m_count;
+	const SimplexVertex* vertices = &m_vertexA;
+	for (int i = 0; i < m_count; ++i)
+	{
+		cache->indexA[i] = vertices[i].index1;
+		cache->indexB[i] = vertices[i].index2;
+	}
+}
+
 Chan::ChVector2 Chan::Simplex::GetClosestPoint() const
 {
 	switch (m_count)
@@ -98,6 +154,25 @@ void Chan::Simplex::GetWitnessPoints(ChVector2 * point1, ChVector2 * point2) con
 	default:
 		assert(false);
 		break;
+	}
+}
+
+Chan::ChReal Chan::Simplex::GetMetric() const
+{
+	switch (m_count)
+	{
+	case 0:
+		assert(false);
+		return 0.0f;
+	case 1:
+		return 0.0f;
+	case 2:
+		return Distance(m_vertexA.point, m_vertexB.point);
+	case 3:
+		return Cross(m_vertexB.point - m_vertexA.point, m_vertexC.point - m_vertexA.point);
+	default:
+		assert(false);
+		return 0.0f;
 	}
 }
 
@@ -366,4 +441,117 @@ void Chan::Distance2D(Output * output, const Input & input)
 	simplex.GetWitnessPoints(&output->point1, &output->point2);
 	output->distance = Distance(output->point1, output->point2);
 	output->iterations = iter;
+}
+
+void Chan::Distance2D(Output* output, SimplexCache* cache, const Input& input)
+{
+	const Polygon* polygon1 = &input.polygon1;
+	const Polygon* polygon2 = &input.polygon2;
+
+	ChTransform transform1 = input.transform1;
+	ChTransform transform2 = input.transform2;
+
+	Simplex simplex;
+	simplex.ReadCache(*cache, input);
+
+	// Begin recording the simplices for visualization
+	output->simplexCount = 0;
+
+	// Get simplex vertices as an array
+	SimplexVertex* vertices = &simplex.m_vertexA;
+
+	// These store the vertices of the last simplex so that we
+	// can check for duplicates and prevent cycling.
+	int save1[3], save2[3];
+	int saveCount = 0;
+
+	// Main iteration loop.
+	const int k_maxIters = 20;
+	int iter = 0;
+	while (iter < k_maxIters)
+	{
+		// Copy simplex so we can identify duplicates.
+		saveCount = simplex.m_count;
+		for (int i = 0; i < saveCount; ++i)
+		{
+			save1[i] = vertices[i].index1;
+			save2[i] = vertices[i].index2;
+		}
+
+		// Determine the closest point on the simplex and
+		// remove unused vertices
+		switch (simplex.m_count)
+		{
+		case 1:
+			break;
+
+		case 2:
+			simplex.Solve2(ChVector2(ChReal(0.0), ChReal(0.0)));
+			break;
+
+		case 3:
+			simplex.Solve3(ChVector2(ChReal(0.0), ChReal(0.0)));
+			break;
+
+		default:
+			assert(false);
+		}
+
+		// Record for visualization.
+		output->simplices[output->simplexCount++] = simplex;
+
+		// If we have 3 points, then the origin is in the corresponding triangle
+		if (simplex.m_count == 3)
+		{
+			break;
+		}
+
+		// Get search direction.
+		ChVector2 d = simplex.GetSearchDirection();
+
+		// Ensure the search direction non-zero
+		if (dot(d, d) == ChReal(0.0))
+		{
+			break;
+		}
+
+		// Compute a tentative new simplex vertex using support points.
+		SimplexVertex* vertex = vertices + simplex.m_count;
+		vertex->index1 = polygon1->GetSupport(transform1.R.Transpose() * -d);
+		vertex->point1 = Mul(transform1, polygon1->m_points[vertex->index1]);
+		vertex->index2 = polygon2->GetSupport(transform2.R.Transpose() * d);
+		vertex->point2 = Mul(transform2, polygon2->m_points[vertex->index2]);
+		vertex->point = vertex->point2 - vertex->point1;
+
+		// Iteration count is equated to the number of support point calls.
+		++iter;
+
+		// Check for duplicate support points. This is the main termination criteria
+		bool duplicate = false;
+		for (int i = 0; i < saveCount; ++i)
+		{
+			if (vertex->index1 == save1[i] && vertex->index2 == save2[i])
+			{
+				duplicate = true;
+				break;
+			}
+		}
+
+		// If we found a duplicate support point we must exit to avoid cycling.
+		if (duplicate)
+		{
+			break;
+		}
+
+		// New vertex is ok and needed.
+		++simplex.m_count;
+	}
+
+	// Prepare output
+	simplex.GetWitnessPoints(&output->point1, &output->point2);
+	output->distance = Distance(output->point1, output->point2);
+	output->iterations = iter;
+
+	// Cache the simplex
+	simplex.WriteCache(cache);
 }

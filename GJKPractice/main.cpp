@@ -97,6 +97,8 @@ int main()
 	double fpsTime = 0;
 	int FPS = 0;
 
+	Chan::SimplexCache SimCache;
+	SimCache.count = 0;
 	while (!glfwWindowShouldClose(gWindow))
 	{
 		// Calculate FPS
@@ -122,19 +124,37 @@ int main()
 		// GJK Algorithm
 		Chan::Input InputTest;
 		Chan::Output OutputTest;
+
+		double noCacheCurTime;
+		double noCachePostTime;
 		{
 			InputTest.polygon1 = triangle;
 			InputTest.polygon2 = quad;
 			InputTest.transform1 = triTransform;
 			InputTest.transform2 = quadTransform;
+
+			noCacheCurTime = glfwGetTime();
 			Chan::Distance2D(&OutputTest, InputTest);
+			noCachePostTime = glfwGetTime();
+		}
+
+		// GJK Cache Algorithm
+		Chan::Output CachedOutput;
+		double CacheCurTime, CachePostTime;
+		{
+			CacheCurTime = glfwGetTime();
+			Chan::Distance2D(&CachedOutput, &SimCache, InputTest);
+			CachePostTime = glfwGetTime();
 		}
 		
 		// Insert Output Primitives
 		{
 			pR.insertPoint(Chan::ChVector3(OutputTest.point1, 0), Chan::ChVector3(1, 0, 0), 10.f);
 			pR.insertPoint(Chan::ChVector3(OutputTest.point2, 0), Chan::ChVector3(0, 1, 0), 10.f);
+			pR.insertPoint(Chan::ChVector3(CachedOutput.point1, 0), Chan::ChVector3(0, 0, 1), 15.f);
+			pR.insertPoint(Chan::ChVector3(CachedOutput.point2, 0), Chan::ChVector3(0, 0, 1), 15.f);
 			lR.insertLine(Chan::ChVector3(OutputTest.point1, 0), Chan::ChVector3(OutputTest.point2, 0), Chan::ChVector3(0.81, 0.4, 0.5));
+			lR.insertLine(Chan::ChVector3(CachedOutput.point1, 0), Chan::ChVector3(CachedOutput.point2, 0), Chan::ChVector3(0.21, 0.7, 0.5));
 			insertPolygon(lR, triangle, triTransform, Chan::ChVector3(0.7, 0.2, 0.4));
 			insertPolygon(lR, quad, quadTransform, Chan::ChVector3(0.1, 0.4, 0.8));
 		}
@@ -150,8 +170,11 @@ int main()
 			lR.renderLine(proj, Chan::ChMat44(1.f), 2.f);
 			pR.renderPoint(proj, Chan::ChMat44(1.f));
 
-			tR.renderText("Dist : " + std::to_string(OutputTest.distance), 0, SCR_HEIGHT - 20, 0.5, Chan::ChVector3(1, 0, 0));
 			tR.renderText("FPS : " + std::to_string(FPS), 0, 0, 0.5, Chan::ChVector3(0.4, 0.6, 0.78));
+			tR.renderText("UnCached Dist : " + std::to_string(OutputTest.distance), 0, SCR_HEIGHT - 20, 0.5, Chan::ChVector3(1, 0, 0));
+			tR.renderText("Cached Dist : " + std::to_string(CachedOutput.distance), 0, SCR_HEIGHT - 50, 0.5, Chan::ChVector3(1, 0, 0));
+			tR.renderText("UnCache Time : " + std::to_string(noCachePostTime - noCacheCurTime), 0, 20, 0.4, Chan::ChVector3(0.4, 0.6, 0.78));
+			tR.renderText("Cache Time : " + std::to_string(CachePostTime - CacheCurTime), 0, 40, 0.4, Chan::ChVector3(0.4, 0.6, 0.78));
 		}
 
 		glfwSwapBuffers(gWindow);
