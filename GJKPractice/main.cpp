@@ -181,7 +181,7 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 	static bool what = false;
 	Chan::ChTransform* object = what ? &triTransform : &quadTransform;
 
-	if (action == GLFW_PRESS || GLFW_REPEAT)
+	if (action == GLFW_PRESS || action == GLFW_REPEAT)
 	{
 		switch (key)
 		{

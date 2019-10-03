@@ -637,13 +637,84 @@ I clear the hardest one!
 
 
 
+## Termination conditions
+
+According to the Erin, There are three conditions to break the GJK algorithm.
+
+1. The case of having 2-simplex (The interior point of the triangle)
+2. Point Overlap -> Cause zero length of Search Direction Vector
+3. Duplicate support points.
+
+In the code
+
+```c++
+// If we have 3 points, then the origin is in the corresponding triangle
+if (simplex.m_count == 3)
+{
+    break;
+}
+
+// Get search direction.
+ChVector2 d = simplex.GetSearchDirection();
+
+// Ensure the search direction non-zero
+if (dot(d, d) == ChReal(0.0))
+{
+    break;
+}
+
+// Check for duplicate support points. This is the main termination criteria
+bool duplicate = false;
+for (int i = 0; i < saveCount; ++i)
+{
+    if (vertex->index1 == save1[i] && vertex->index2 == save2[i])
+    {
+        duplicate = true;
+        break;
+    }
+}
+
+// If we found a duplicate support point we must exit to avoid cycling.
+if (duplicate)
+{
+    break;
+}
+```
+
+I will summarize this according to the pdf.
+
+* Duplicate Support Points
+  * Case 1 : Repeated Support Point
+  * Case 3b : Edge Overlap
+  * Case 4 : Interior edge
+* 2-simplex Case
+  * Case 2 : Containment in super polygon
+* Zero Length Search Vector
+  * Case 3a : vertex overlap
+
+To understand this well, You should see the figure on the pdf.
+
+
+
+## Analyzing Box2D code on Distance2D And then optimizing sample code
+
+### 1) GJK Optimization + Enforcement + Caching
+
+
+
+### 2) GJK Raycast
+
+
+
+
+
+
+
+
+
 
 ## TODO
-3. Explain the structure of the loop on Distance2D() function
-	- structure
-	- terminate condition
-4. Code Optimization (reduce unnecessary work)
-5. Analyzing Box2D code on Distance2D
+5. Analyzing Box2D code on Distance2D And then optimize sample code
 	- GJK Optimization + enforcement + Caching
 	- GJK Raycast
 6. Study and Apply on 3D
