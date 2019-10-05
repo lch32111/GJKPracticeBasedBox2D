@@ -171,10 +171,10 @@ int main()
 			pR.renderPoint(proj, Chan::ChMat44(1.f));
 
 			tR.renderText("FPS : " + std::to_string(FPS), 0, 0, 0.5, Chan::ChVector3(0.4, 0.6, 0.78));
-			tR.renderText("UnCached Dist : " + std::to_string(OutputTest.distance), 0, SCR_HEIGHT - 20, 0.5, Chan::ChVector3(1, 0, 0));
-			tR.renderText("Cached Dist : " + std::to_string(CachedOutput.distance), 0, SCR_HEIGHT - 50, 0.5, Chan::ChVector3(1, 0, 0));
-			tR.renderText("UnCache Time : " + std::to_string(noCachePostTime - noCacheCurTime), 0, 20, 0.4, Chan::ChVector3(0.4, 0.6, 0.78));
+			tR.renderText("Cached Dist : " + std::to_string(CachedOutput.distance), 0, SCR_HEIGHT - 20, 0.5, Chan::ChVector3(1, 0, 0));
+			tR.renderText("UnCached Dist : " + std::to_string(OutputTest.distance), 0, SCR_HEIGHT - 50, 0.5, Chan::ChVector3(1, 0, 0));
 			tR.renderText("Cache Time : " + std::to_string(CachePostTime - CacheCurTime), 0, 40, 0.4, Chan::ChVector3(0.4, 0.6, 0.78));
+			tR.renderText("UnCache Time : " + std::to_string(noCachePostTime - noCacheCurTime), 0, 20, 0.4, Chan::ChVector3(0.4, 0.6, 0.78));
 		}
 
 		glfwSwapBuffers(gWindow);

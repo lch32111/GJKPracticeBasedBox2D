@@ -58,8 +58,8 @@ namespace Chan
 		ChVector2 GetClosestPoint() const;
 		ChReal GetMetric() const;
 		void GetWitnessPoints(ChVector2* point1, ChVector2* point2) const;
-		void Solve2(const ChVector2& Q);
-		void Solve3(const ChVector2& Q);
+		void Solve2();
+		void Solve3();
 
 		SimplexVertex m_vertexA, m_vertexB, m_vertexC;
 		float m_divisor; // denominator to normalize barycentric coordinates

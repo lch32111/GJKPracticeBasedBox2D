@@ -698,7 +698,7 @@ To understand this well, You should see the figure on the pdf.
 
 ## Analyzing Box2D code on Distance2D And then optimizing sample code
 
-### 1) GJK Optimization + Enforcement + Caching
+### 1) GJK Caching + Optimization
 
 I just want to analyze the caching first. The code is
 
@@ -964,26 +964,37 @@ So the invalid condition is
 
 
 
+***
+
+I tried to figure out why Erin put half or double metric to check whether the cached data is valid. However, It's very hard for me to find the reason. I think I need to study more. So, This issue will be supplemented later.
+
+***
 
 
 
+### GJK Optimization
+
+I think I tried some of optimizations. And there is one thing left to do in my code,  which is related to solve() function. Because GJK algorithm is finding a closest point with the origin. We don't need to take the parameter for a query point. So, I deleted and optimized the code following Box2D code.
+
+I think the code is almost similar to the Box2D code.
 
 
 
 ### 2) GJK Raycast
 
+I tried to understand this thing, but this one is so hard for me to understand. So, I've planned to study basics from bottom. After doing it, I will cover this.
 
 
 
+## Study and Apply on 3D
 
-
+I will try to do this one after I get enough knowledge of physics. Because the priority of studying game physics  itself is higher, I will do the game physics first. I'm not sure when I can cover the 3D part of game physics. But I hope I will cover this in one year. Today is 2019-10-06.
 
 
 
 
 ## TODO
 5. Analyzing Box2D code on Distance2D And then optimize sample code
-	- GJK Optimization + enforcement + Caching
 	- GJK Raycast
 6. Study and Apply on 3D
 7. Boom! Done.

@@ -178,14 +178,13 @@ Chan::ChReal Chan::Simplex::GetMetric() const
 
 // Closest point on line segment to Q
 // Voronoi regions : A, B, AB
-void Chan::Simplex::Solve2(const ChVector2 & Q)
+void Chan::Simplex::Solve2()
 {
-	ChVector2 A = m_vertexA.point;
-	ChVector2 B = m_vertexB.point;
-
+	ChVector2 e = m_vertexB.point - m_vertexA.point;
+	
 	// Compute barycentric coordinates (pre-division).
-	ChReal u = dot(Q - B, A - B);
-	ChReal v = dot(Q - A, B - A);
+	ChReal u = dot(m_vertexB.point, e);
+	ChReal v = dot(-m_vertexA.point, e);
 
 	// Region A
 	if (v <= ChReal(0.0))
@@ -214,28 +213,28 @@ void Chan::Simplex::Solve2(const ChVector2 & Q)
 	// is safe
 	m_vertexA.u = u;
 	m_vertexB.u = v;
-	ChVector2 e = B - A;
+	
 	m_divisor = dot(e, e);
 	m_count = 2;
 }
 
 // Closest point on triangle to Q.
 // Voronoi regions : A, B, C, AB, BC, CA, ABC
-void Chan::Simplex::Solve3(const ChVector2 & Q)
+void Chan::Simplex::Solve3()
 {
 	ChVector2 A = m_vertexA.point;
 	ChVector2 B = m_vertexB.point;
 	ChVector2 C = m_vertexC.point;
 
 	// Compute edge barycentric coordinates (pre-division).
-	ChReal uAB = dot(Q - B, A - B);
-	ChReal vAB = dot(Q - A, B - A);
+	ChReal uAB = dot(B, B - A);
+	ChReal vAB = dot(-A, B - A);
 
-	ChReal uBC = dot(Q - C, B - C);
-	ChReal vBC = dot(Q - B, C - B);
+	ChReal uBC = dot(C, C - B);
+	ChReal vBC = dot(-B, C - B);
 
-	ChReal uCA = dot(Q - A, C - A);
-	ChReal vCA = dot(Q - C, A - C);
+	ChReal uCA = dot(A, A - C);
+	ChReal vCA = dot(-C, A - C);
 
 	// Region A
 	if (vAB <= ChReal(0.0) && uCA <= ChReal(0.0))
@@ -270,9 +269,9 @@ void Chan::Simplex::Solve3(const ChVector2 & Q)
 	ChReal area = Cross(B - A, C - A);
 
 	// Compute triangle barycentric coordinates (pre-division).
-	ChReal uABC = area * Cross(B - Q, C - Q);
-	ChReal vABC = area * Cross(C - Q, A - Q);
-	ChReal wABC = area * Cross(A - Q, B - Q);
+	ChReal uABC = area * Cross(B, C);
+	ChReal vABC = area * Cross(C, A);
+	ChReal wABC = area * Cross(A, B);
 
 	// Region AB
 	if (uAB > ChReal(0.0) && vAB > ChReal(0.0) && wABC <= ChReal(0.0))
@@ -376,11 +375,11 @@ void Chan::Distance2D(Output * output, const Input & input)
 			break;
 			
 		case 2:
-			simplex.Solve2(ChVector2(ChReal(0.0), ChReal(0.0)));
+			simplex.Solve2();
 			break;
 			
 		case 3:
-			simplex.Solve3(ChVector2(ChReal(0.0), ChReal(0.0)));
+			simplex.Solve3();
 			break;
 
 		default:
@@ -486,11 +485,11 @@ void Chan::Distance2D(Output* output, SimplexCache* cache, const Input& input)
 			break;
 
 		case 2:
-			simplex.Solve2(ChVector2(ChReal(0.0), ChReal(0.0)));
+			simplex.Solve2();
 			break;
 
 		case 3:
-			simplex.Solve3(ChVector2(ChReal(0.0), ChReal(0.0)));
+			simplex.Solve3();
 			break;
 
 		default:
@@ -510,7 +509,7 @@ void Chan::Distance2D(Output* output, SimplexCache* cache, const Input& input)
 		ChVector2 d = simplex.GetSearchDirection();
 
 		// Ensure the search direction non-zero
-		if (dot(d, d) == ChReal(0.0))
+		if (dot(d, d) < Chreal_epsilon * Chreal_epsilon)
 		{
 			break;
 		}
