@@ -369,12 +369,13 @@ CGRenderText::CGRenderText(int& Screen_Width, int& Screen_Height)
 		std::cout << "ERROR::FREETYTPE: Failed to load Glyph" << std::endl;
 		assert(0);
 	}
-
+	
 	// Disable byte-alignment restriction
-	// ������ glReadPixels�� ���� �Ӹ� �ƴ϶�, �ؽ��� ������ unpacking��
-	// ������ ��ġ�� pixel storage mode�� �����Ѵ�.
-	// 10�� �� 4���� storage parameters�� pixel data�� client memory��
-	// ��� ��ȯ�Ǵ��� ������ ��ģ��.
+	// 이후의 glReadPixels의 연산 뿐만 아니라, 텍스쳐 패턴의 unpacking에
+	// 영향을 미치는 pixel storage mode를 설정한다.
+	// 10개 중 4개의 storage parameters는 pixel data가 client memory에
+	// 어떻게 반환되는지 영향을 미친다.
+	// Disable byte-alignment restriction
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	for (GLubyte c = 0; c < 128; ++c)
 	{

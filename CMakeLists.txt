@@ -14,7 +14,8 @@ source_group(header FILES ${HEADER_FILES})
 
 add_executable(GJKPractice ${SOURCE_FILES} ${HEADER_FILES})
 
-# ignore freetype install
+# ignore freetype/glfw install
+# build freetype/glfw in DLL
 set(SKIP_INSTALL_HEADERS ON CACHE BOOL "FreeType Ignore Install Headers")
 set(SKIP_INSTALL_ALL ON CACHE BOOL "FreeType Ignore Install All")
 set(BUILD_SHARED_LIBS ON CACHE BOOL "FreeType Build for DLL")
@@ -23,8 +24,6 @@ set(GLFW_INSTALL OFF CACHE BOOL "GLFW Ignore Install")
 
 add_subdirectory(lib/freetype)
 add_subdirectory(lib/glfw)
-
-
 
 target_include_directories(GJKPractice PRIVATE include)
 target_link_libraries(GJKPractice freetype)
