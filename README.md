@@ -9,11 +9,31 @@ Result :
 
 
 
+### Build
+
+```
+git clone https://github.com/lch32111/GJKPracticeBasedBox2D.git
+git submodule update --init --recursive
+mkdir build
+cd build
+cmake ../ -G "Your Generator" -A "x64"
+```
+
+This project depends on the glfw library and the freetype library. You have to do the **install build** before running the program to load a font.
+
+
+
+### License
+
+[MIT License](https://en.wikipedia.org/wiki/MIT_License)
+
+
+
 ## Summary for myself
 
 I will summarize the hard one for me to understand, or the hard one for me to memorize.
 
-This summary is based on Erin Catto GDC Presentation. This explanation is only for me.
+This summary is based on Erin Catto GDC Presentation. This explanation was made to teach myself.
 
 
 

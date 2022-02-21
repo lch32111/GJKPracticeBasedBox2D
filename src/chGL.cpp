@@ -1,3 +1,25 @@
+// MIT License
+
+// Copyright(c) 2022 Chanhaeng Lee
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this softwareand associated documentation files(the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and /or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions :
+
+// The above copyright noticeand this permission notice shall be included in all
+// copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 #include "chGL.hpp"
 
 #include <ft2build.h>
@@ -334,7 +356,7 @@ CGRenderText::CGRenderText(int& Screen_Width, int& Screen_Height)
 	}
 
 	FT_Face face;
-	if (FT_New_Face(ft, "fonts/arial.ttf", 0, &face))
+	if (FT_New_Face(ft, "arial.ttf", 0, &face))
 	{
 		std::cout << "ERROR::FREETYPE: Failed to load font" << std::endl;
 		assert(0);
@@ -349,10 +371,10 @@ CGRenderText::CGRenderText(int& Screen_Width, int& Screen_Height)
 	}
 
 	// Disable byte-alignment restriction
-	// ÀÌÈÄÀÇ glReadPixelsÀÇ ¿¬»ê »Ó¸¸ ¾Æ´Ï¶ó, ÅØ½ºÃÄ ÆÐÅÏÀÇ unpacking¿¡
-	// ¿µÇâÀ» ¹ÌÄ¡´Â pixel storage mode¸¦ ¼³Á¤ÇÑ´Ù.
-	// 10°³ Áß 4°³ÀÇ storage parameters´Â pixel data°¡ client memory¿¡
-	// ¾î¶»°Ô ¹ÝÈ¯µÇ´ÂÁö ¿µÇâÀ» ¹ÌÄ£´Ù.
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ glReadPixelsï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ó¸ï¿½ ï¿½Æ´Ï¶ï¿½, ï¿½Ø½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ unpackingï¿½ï¿½
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ï¿½ï¿½ pixel storage modeï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
+	// 10ï¿½ï¿½ ï¿½ï¿½ 4ï¿½ï¿½ï¿½ï¿½ storage parametersï¿½ï¿½ pixel dataï¿½ï¿½ client memoryï¿½ï¿½
+	// ï¿½î¶»ï¿½ï¿½ ï¿½ï¿½È¯ï¿½Ç´ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä£ï¿½ï¿½.
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	for (GLubyte c = 0; c < 128; ++c)
 	{

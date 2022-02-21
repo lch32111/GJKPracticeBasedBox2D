@@ -14,3 +14,5 @@ ModelFolder/
 
 # Don't Include Imgui Setting Save File.
 imgui.ini
+
+build/
